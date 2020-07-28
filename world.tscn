@@ -105,3 +105,52 @@ format = 1
 
 [node name="mapCamera" type="Camera2D" parent="."]
 current = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="h" type="HBoxContainer" parent="CanvasLayer"]
+anchor_right = 1.0
+margin_left = 5.0
+margin_top = 5.0
+margin_right = 5.0
+margin_bottom = 5.0
+size_flags_vertical = 4
+custom_constants/separation = 30
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Time" type="Label" parent="CanvasLayer/h"]
+margin_right = 32.0
+margin_bottom = 14.0
+text = "Time"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="fillRatio" type="Label" parent="CanvasLayer/h"]
+margin_left = 62.0
+margin_right = 114.0
+margin_bottom = 14.0
+text = "fill Ratio"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="birthLimit" type="Label" parent="CanvasLayer/h"]
+margin_left = 144.0
+margin_right = 174.0
+margin_bottom = 14.0
+text = "birth"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="deathLimit" type="Label" parent="CanvasLayer/h"]
+margin_left = 204.0
+margin_right = 240.0
+margin_bottom = 14.0
+text = "death"
+__meta__ = {
+"_edit_use_anchors_": false
+}
