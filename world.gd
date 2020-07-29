@@ -1,23 +1,24 @@
 extends Node2D
+class_name CaveWorld
 
-export (int) var mapWidth = 75
-export (int) var mapHeight = 45
-export (int) var tileSize = 32
-export (int) var fillRatio = 55
-export (int) var maxTime = 2
-export (int) var wallsLimit = 4
+export (int) var mapWidth := 75
+export (int) var mapHeight := 45
+export (int) var tileSize := 32
+export (int) var fillRatio := 55
+export (int) var maxTime := 2
+export (int) var wallsLimit := 4
 
 var time := 0
 
-onready var tileMap = $TileMap
-onready var mapCamera = $mapCamera
+onready var tileMap: TileMap = $TileMap
+onready var mapCamera: Camera2D = $mapCamera
 var map := []
 # Dirt is "alive", Walls are "dead"
 enum Tiles { DIRT, WALL, GRASS, VOID }
 
 
 # Called when the node enters the scene tree for the first time.
-func _ready():
+func _ready() -> void:
 	randomize()
 	# rand_seed(13375)
 	var w = (mapWidth) * tileSize
@@ -31,7 +32,7 @@ func _ready():
 	createMapAtTimeZero()
 
 
-func _unhandled_input(_event):
+func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("ui_accept"):
 		timeAdvance()
 	if Input.is_action_just_pressed("ui_cancel"):
@@ -62,13 +63,13 @@ func _unhandled_input(_event):
 		timeAdvance()
 
 
-func updateUI():
+func updateUI() -> void:
 	$CanvasLayer/h/Time.text = "Time: " + str(time)
 	$CanvasLayer/h/fillRatio.text = "Fill Ratio: " + str(fillRatio)
 	$CanvasLayer/h/wallsLimit.text = "Walls Limits: " + str(wallsLimit)
 
 
-func timeAdvance():
+func timeAdvance() -> void:
 	time += 1
 	for y in range(1, mapHeight - 1):
 		for x in range(1, mapWidth - 1):
@@ -84,8 +85,8 @@ func timeAdvance():
 	mapToTileMap()
 
 
-func countWallsInNeighborhood(x, y):
-	var wallCount = 0
+func countWallsInNeighborhood(x: int, y: int) -> int:
+	var wallCount := 0
 	for xx in range(x - 1, x + 2):
 		for yy in range(y - 1, y + 2):
 			if xx != x || yy != y:
@@ -94,21 +95,21 @@ func countWallsInNeighborhood(x, y):
 	return wallCount
 
 
-func mapToTileMap():
+func mapToTileMap() -> void:
 	for x in range(0, mapWidth):
 		for y in range(0, mapHeight):
 			tileMap.set_cell(x, y, map[x][y])
 
 
-func createMapAtTimeZero():
+func createMapAtTimeZero() -> void:
 	tileMap.clear()
 	map = []
 	time = 0
 	for x in range(0, mapWidth):
-		var tmap = []
+		var tmap := []
 		map.append(tmap)
 		for y in range(0, mapHeight):
-			var tile = Tiles.WALL
+			var tile: int = Tiles.WALL
 			if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
 				var r = (randi() % 100) + 1
 				if r < fillRatio:
