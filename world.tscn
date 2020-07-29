@@ -99,6 +99,7 @@ points = PoolVector2Array( 0, 0, 32, 0, 32, 32, 0, 32 )
 script = ExtResource( 2 )
 
 [node name="TileMap" type="TileMap" parent="."]
+show_behind_parent = true
 tile_set = SubResource( 6 )
 cell_size = Vector2( 32, 32 )
 format = 1
