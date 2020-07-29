@@ -27,10 +27,6 @@ var mouseRoomEdge: Vector2
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	if level_seed:
-		rnd.seed = hash(level_seed)
-	else:
-		rnd.randomize()
 	var w = (mapWidth) * tileSize
 	var h = (mapHeight) * tileSize
 	mapCamera.position = Vector2(w / 2, h / 2)
@@ -166,6 +162,10 @@ func mapToTileMap() -> void:
 
 
 func createMapAtTimeZero() -> void:
+	if level_seed:
+		rnd.seed = hash(level_seed)
+	else:
+		rnd.randomize()
 	tileMap.clear()
 	map = []
 	time = 0
