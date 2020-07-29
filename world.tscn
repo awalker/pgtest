@@ -137,20 +137,11 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="birthLimit" type="Label" parent="CanvasLayer/h"]
+[node name="wallsLimit" type="Label" parent="CanvasLayer/h"]
 margin_left = 144.0
-margin_right = 174.0
+margin_right = 179.0
 margin_bottom = 14.0
-text = "birth"
-__meta__ = {
-"_edit_use_anchors_": false
-}
-
-[node name="deathLimit" type="Label" parent="CanvasLayer/h"]
-margin_left = 204.0
-margin_right = 240.0
-margin_bottom = 14.0
-text = "death"
+text = "Walls"
 __meta__ = {
 "_edit_use_anchors_": false
 }
