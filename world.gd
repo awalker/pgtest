@@ -2,14 +2,14 @@ extends Node2D
 class_name CaveWorld
 
 export var level_seed: String
-export (int) var mapWidth := 75
-export (int) var mapHeight := 45
+export (int) var mapWidth := 256
+export (int) var mapHeight := 240
 export (int) var tileSize := 32
 export (int) var fillRatio := 55
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
 export (Vector2) var roomCountRange := Vector2(3,7)
-export (Vector2) var roomSizeRange := Vector2(5,15)
+export (Vector2) var roomSizeRange := Vector2(15,50)
 
 var rooms := []
 
