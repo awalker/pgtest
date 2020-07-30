@@ -8,6 +8,8 @@ export (int) var tileSize := 32
 export (int) var fillRatio := 55
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
+export (int) var minRoomArea := 50
+export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
 
@@ -16,6 +18,7 @@ var rooms := []
 var rnd := RandomNumberGenerator.new()
 
 var time := 0
+var working := false
 
 onready var tileMap: TileMap = $TileMap
 onready var mapCamera: Camera2D = $mapCamera
@@ -27,6 +30,7 @@ var makingARoom := false
 var mousePointer := Vector2.ZERO
 var mouseRoomCenter: Vector2
 var mouseRoomEdge: Vector2
+var highlightTiles: Array
 
 
 class Room:
@@ -60,6 +64,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if working:
+		return
 	if Input.is_action_just_pressed("ui_accept"):
 		timeAdvance()
 		mapToTileMap()
@@ -105,6 +111,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		mousePointer = get_global_mouse_position()
 		update()
+	if !working && Input.is_mouse_button_pressed(2):
+		working = true
+		var p = get_global_mouse_position()
+		print("finding group")
+		var result = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
+		highlightTiles = yield(result, "completed")
+		print(highlightTiles.size())
+		update()
+		working = false
 	if ! makingARoom && Input.is_mouse_button_pressed(1):
 		mouseRoomCenter = get_global_mouse_position()
 		mouseRoomEdge = mouseRoomCenter
@@ -129,6 +144,9 @@ func _draw():
 	if rooms:
 		for r in rooms:
 			draw_circle(Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow)
+	if highlightTiles:
+		for t in highlightTiles:
+			draw_rect(Rect2(Vector2(t.x * tileSize, t.y * tileSize), Vector2(tileSize, tileSize)), Color("#00FF00" if working else "#0000FF"), true)
 
 
 func makeRooms() -> void:
@@ -184,6 +202,7 @@ func updateUI() -> void:
 
 
 func timeAdvance() -> void:
+	highlightTiles = []
 	rooms = [] # Some rooms make join or disappear, so just start over
 	time += 1
 	for y in range(1, mapHeight - 1):
@@ -215,8 +234,81 @@ func mapToTileMap() -> void:
 			tileMap.set_cell(x, y, map[x][y])
 	update()
 
+func cull() -> void:
+	pass
+
+func findGroups(type: int) -> Array:
+	var groups := []
+	for y in range(mapHeight):
+		for x in range(mapWidth):
+			var tile:int = map[x][y]
+			if tile == type:
+				var v := Vector2(x,y)
+				var inGroup:= false
+				for g in groups:
+					if g.has(v):
+						inGroup = true
+						break
+				if !inGroup:
+					var data := [[],[Vector2(x,y)]]
+					while data[1].size():
+						data = findRestOfGroup(data, type)
+					groups.append(data[0])
+	return groups
+
+func queueIfOk(queue: Array, group: Array, x: int, y: int) -> void:
+	var v := Vector2(x,y)
+	if x >= 0 && x < mapWidth && y >= 0 && y < mapHeight && !queue.has(v) && !group.has(v):
+		queue.append(v)
+
+var runlimit = 250
+func findTileGroup(x: int, y: int, type: int):
+	var data := [[],[Vector2(x,y)]]
+	var start := OS.get_ticks_msec()
+	var elapsed := 0.0
+	var i := 0
+	yield(get_tree(), "idle_frame")
+	while data[1].size():
+		data = findRestOfGroup(data, type)
+		i += 1
+		if i > runlimit:
+			i = 0
+			# Resume execution the next frame.
+			elapsed += OS.get_ticks_msec() - start
+			highlightTiles = data[0]
+			update()
+			yield(get_tree(), "idle_frame")
+			start = OS.get_ticks_msec()
+	print("%f sec at run limit %d" % [elapsed / 1000.0, runlimit])
+	return data[0]
+
+func findRestOfGroup(data: Array, type: int) -> Array:
+	var group: Array = data[0]
+	var queue: Array = data[1]
+	var _x := 0
+	var _y := 0
+
+	var mine: Vector2 = queue.pop_front()
+	if mine == null:
+		return data
+	_x = mine.x as int
+	_y = mine.y as int
+
+	var x = clamp(_x, 0, mapWidth)
+	var y = clamp(_y, 0, mapHeight)
+	if x != _x || y != _y:
+		return data
+	var v := Vector2(x,y)
+	if !group.has(v) && map[x][y] == type:
+		group.append(v)
+		queueIfOk(queue,group,x-1, y)
+		queueIfOk(queue,group,x+1, y)
+		queueIfOk(queue,group,x, y-1)
+		queueIfOk(queue,group,x, y+1)
+	return data
 
 func createMapAtTimeZero() -> void:
+	highlightTiles = []
 	if level_seed:
 		rnd.seed = hash(level_seed)
 	else:
@@ -225,9 +317,11 @@ func createMapAtTimeZero() -> void:
 	map = []
 	rooms = []
 	time = 0
+	map.resize(mapWidth)
 	for x in range(0, mapWidth):
 		var tmap := []
-		map.append(tmap)
+		tmap.resize(mapHeight)
+		map[x] = tmap
 		for y in range(0, mapHeight):
 			var tile: int = Tiles.WALL
 			if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
@@ -236,6 +330,6 @@ func createMapAtTimeZero() -> void:
 					tile = Tiles.DIRT
 				else:
 					tile = Tiles.WALL
-			tmap.append(tile)
+			tmap[y] = tile
 	updateUI()
 	# timeAdvance()
