@@ -8,6 +8,10 @@ export (int) var tileSize := 32
 export (int) var fillRatio := 55
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
+export (Vector2) var roomCountRange := Vector2(3,7)
+export (Vector2) var roomSizeRange := Vector2(5,15)
+
+var rooms := []
 
 var rnd := RandomNumberGenerator.new()
 
@@ -65,6 +69,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("clear"):
 		fillRatio = 0
 		createMapAtTimeZero()
+	if Input.is_action_just_pressed("make_rooms"):
+		fillRatio = 40
+		createMapAtTimeZero()
+		makeRooms()
+		mapToTileMap()
+		updateUI()
+		update()
 	if event is InputEventMouseMotion:
 		mousePointer = get_global_mouse_position()
 		update()
@@ -77,7 +88,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		mouseRoomEdge = get_global_mouse_position()
 		if ! Input.is_mouse_button_pressed(1):
 			makingARoom = false
-			makeARoom(mouseRoomCenter, mouseRoomEdge)
+			makeARoom(mouseRoomCenter/tileSize, mouseRoomEdge/tileSize)
+			mapToTileMap()
 		update()
 
 
@@ -87,15 +99,30 @@ func _draw():
 		if mouseRoomEdge:
 			radius = mouseRoomCenter.distance_to(mouseRoomEdge)
 		draw_circle(mouseRoomCenter, radius, Color.red)
-	draw_circle(mousePointer, 50.0, Color.green)
+	draw_circle(mousePointer, 15.0, Color.green)
+	if rooms:
+		for r in rooms:
+			draw_circle(Vector2(r[0].x * tileSize, r[0].y * tileSize), 32.0, Color.yellow)
+
+func makeRooms() -> void:
+	var roomCount := rnd.randi_range(roomCountRange.x as int, roomCountRange.y as int)
+	rooms = []
+	for _i in range(roomCount):
+		var maxRoomSize : int = roomSizeRange.y as int
+		var x := rnd.randi_range(1+maxRoomSize, mapWidth-2 - maxRoomSize)
+		var y := rnd.randi_range(1+maxRoomSize, mapHeight-2 - maxRoomSize)
+		var c := Vector2(x,y)
+		var d := rnd.randi_range(roomSizeRange.x as int , roomSizeRange.y as int)
+		rooms.append([c, d])
+		makeARoom(c, Vector2(x-d,y))
 
 
 func makeARoom(center: Vector2, edge: Vector2) -> void:
 	# Create Our Room
 	var maxDistSq := center.distance_squared_to(edge)
-	var maxDist := center.distance_to(edge) / tileSize
-	var cx := round(center.x / tileSize) as int
-	var cy := round(center.y / tileSize) as int
+	var maxDist := center.distance_to(edge)
+	var cx := round(center.x) as int
+	var cy := round(center.y) as int
 	var tl := Vector2(cx - maxDist, cy - maxDist)
 	for _y in range(tl.y, tl.y + maxDist * 2):
 		for _x in range(tl.x, tl.x + maxDist * 2):
@@ -105,7 +132,7 @@ func makeARoom(center: Vector2, edge: Vector2) -> void:
 			var percent := (
 				1.0
 				- clamp(
-					center.distance_squared_to(Vector2(x * tileSize, y * tileSize)) / maxDistSq,
+					center.distance_squared_to(Vector2(x, y )) / maxDistSq,
 					0.0,
 					1.0
 				)
@@ -113,7 +140,6 @@ func makeARoom(center: Vector2, edge: Vector2) -> void:
 			if rnd.randf() < percent:
 				tile = Tiles.DIRT
 			map[x][y] = tile
-	mapToTileMap()
 
 
 func updateUI() -> void:
@@ -161,6 +187,7 @@ func createMapAtTimeZero() -> void:
 		rnd.randomize()
 	tileMap.clear()
 	map = []
+	rooms = []
 	time = 0
 	for x in range(0, mapWidth):
 		var tmap := []
