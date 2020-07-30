@@ -8,7 +8,7 @@ export (int) var tileSize := 32
 export (int) var fillRatio := 55
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
-export (Vector2) var roomCountRange := Vector2(3, 7)
+export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
 
 var rooms := []
@@ -32,6 +32,18 @@ var mouseRoomEdge: Vector2
 class Room:
 	var center := Vector2.ZERO
 	var distance := 0
+	var connected := []
+	var tiles := []
+	var edges := []
+	var isConnectedToMain := false
+	var isMain := false
+
+	func isConnected(room: Room) -> bool:
+		return connected.has(room)
+
+	func connectRoom(room: Room) -> void:
+		connected.append(room)
+		room.connected.append(self)
 
 
 # Called when the node enters the scene tree for the first time.
@@ -44,36 +56,45 @@ func _ready() -> void:
 	var z = max(zx, zy)
 	mapCamera.zoom = Vector2(z, z)
 	createMapAtTimeZero()
+	mapToTileMap()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("ui_accept"):
 		timeAdvance()
+		mapToTileMap()
 	if Input.is_action_just_pressed("ui_cancel"):
 		createMapAtTimeZero()
+		mapToTileMap()
 	if Input.is_action_just_pressed("ui_right"):
 		fillRatio += 1
 		createMapAtTimeZero()
 		timeAdvance()
+		mapToTileMap()
 	if Input.is_action_just_pressed("ui_left"):
 		fillRatio -= 1
 		createMapAtTimeZero()
 		timeAdvance()
+		mapToTileMap()
 	if Input.is_action_just_pressed("ui_up"):
 		fillRatio += 5
 		createMapAtTimeZero()
 		timeAdvance()
+		mapToTileMap()
 	if Input.is_action_just_pressed("ui_down"):
 		fillRatio -= 5
 		createMapAtTimeZero()
 		timeAdvance()
+		mapToTileMap()
 	if Input.is_action_just_pressed('wall_lower'):
 		wallsLimit -= 1 * -1 if Input.is_action_pressed("raise_mod") else 1
 		createMapAtTimeZero()
 		timeAdvance()
+		mapToTileMap()
 	if Input.is_action_just_pressed("clear"):
 		fillRatio = 0
 		createMapAtTimeZero()
+		mapToTileMap()
 	if Input.is_action_just_pressed("make_rooms"):
 		fillRatio = 40
 		createMapAtTimeZero()
@@ -113,18 +134,27 @@ func _draw():
 func makeRooms() -> void:
 	var roomCount := rnd.randi_range(roomCountRange.x as int, roomCountRange.y as int)
 	rooms = []
-	for _i in range(roomCount):
+	var i := 0
+	var energy := 100
+	while i < roomCount && energy > 0:
+		# Check existing room and attempt to reduce overlap. Some overlap would be ok(?)
 		var maxRoomSize: int = roomSizeRange.y as int
 		var x := rnd.randi_range(1 + maxRoomSize, mapWidth - 2 - maxRoomSize)
 		var y := rnd.randi_range(1 + maxRoomSize, mapHeight - 2 - maxRoomSize)
 		var c := Vector2(x, y)
 		var d := rnd.randi_range(roomSizeRange.x as int, roomSizeRange.y as int)
-		var r := Room.new()
-		r.center = c
-		r.distance = d
-		rooms.append(r)
-		makeARoom(c, Vector2(x - d, y))
-
+		var closest := 999999.0
+		for room in rooms:
+			closest = min(closest, room.center.distance_squared_to(c))
+		if closest > maxRoomSize * maxRoomSize * 0.75:
+			var r := Room.new()
+			r.center = c
+			r.distance = d
+			rooms.append(r)
+			makeARoom(c, Vector2(x - d, y))
+			i+=1
+		else:
+			energy -= 1
 
 func makeARoom(center: Vector2, edge: Vector2) -> void:
 	# Create Our Room
@@ -154,6 +184,7 @@ func updateUI() -> void:
 
 
 func timeAdvance() -> void:
+	rooms = [] # Some rooms make join or disappear, so just start over
 	time += 1
 	for y in range(1, mapHeight - 1):
 		for x in range(1, mapWidth - 1):
@@ -166,7 +197,6 @@ func timeAdvance() -> void:
 				if walls < wallsLimit:
 					map[x][y] = Tiles.DIRT
 	updateUI()
-	mapToTileMap()
 
 
 func countWallsInNeighborhood(x: int, y: int) -> int:
@@ -183,6 +213,7 @@ func mapToTileMap() -> void:
 	for x in range(0, mapWidth):
 		for y in range(0, mapHeight):
 			tileMap.set_cell(x, y, map[x][y])
+	update()
 
 
 func createMapAtTimeZero() -> void:
@@ -207,5 +238,4 @@ func createMapAtTimeZero() -> void:
 					tile = Tiles.WALL
 			tmap.append(tile)
 	updateUI()
-	mapToTileMap()
 	# timeAdvance()
