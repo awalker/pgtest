@@ -49,6 +49,31 @@ class Room:
 		connected.append(room)
 		room.connected.append(self)
 
+class TileGroup:
+	var regions := []
+
+	func canVectorJoin(v: Vector2) -> bool:
+		var t := Rect2(v, Vector2(1,1))
+		return canRectJoin(t)
+
+	func canRectJoin(t: Rect2) -> bool:
+		if regions.empty():
+			regions.append(t)
+			return true
+		else:
+			for r in regions:
+				if r.intersects(t, true):
+					return true
+		return false
+
+	func draw(color: Color, node: Node2D) -> void:
+		for r in regions:
+			node.draw_rect(r, color, true)
+
+	# func addPoint(x:int, y:int) -> void:
+		# var r := Rect2(Vector2(x,y), Vector(1,1))
+			
+
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -108,6 +133,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		mapToTileMap()
 		updateUI()
 		update()
+	if Input.is_action_just_pressed("cull"):
+		working = true
+		cull()
+		mapToTileMap()
+		updateUI()
+		update()
+		working = false
 	if event is InputEventMouseMotion:
 		mousePointer = get_global_mouse_position()
 		update()
@@ -235,11 +267,13 @@ func mapToTileMap() -> void:
 	update()
 
 func cull() -> void:
-	pass
+	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
+	print("Found %d wall groups" % walls.size())
 
 func findGroups(type: int) -> Array:
 	var groups := []
 	for y in range(mapHeight):
+		yield(get_tree(), "idle_frame")
 		for x in range(mapWidth):
 			var tile:int = map[x][y]
 			if tile == type:
@@ -250,10 +284,8 @@ func findGroups(type: int) -> Array:
 						inGroup = true
 						break
 				if !inGroup:
-					var data := [[],[Vector2(x,y)]]
-					while data[1].size():
-						data = findRestOfGroup(data, type)
-					groups.append(data[0])
+					var tiles: Array = yield(findTileGroup(x,y, type), "completed")
+					groups.append(tiles)
 	return groups
 
 func queueIfOk(queue: Array, group: Array, x: int, y: int) -> void:
@@ -280,6 +312,7 @@ func findTileGroup(x: int, y: int, type: int):
 			yield(get_tree(), "idle_frame")
 			start = OS.get_ticks_msec()
 	print("%f sec at run limit %d" % [elapsed / 1000.0, runlimit])
+	highlightTiles = data[0]
 	return data[0]
 
 func findRestOfGroup(data: Array, type: int) -> Array:
