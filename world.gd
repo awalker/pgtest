@@ -34,7 +34,6 @@ func _ready() -> void:
 	var zy = h / (get_viewport_rect().size.y)
 	var z = max(zx, zy)
 	mapCamera.zoom = Vector2(z, z)
-	print(z)
 	createMapAtTimeZero()
 
 
@@ -45,22 +44,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		createMapAtTimeZero()
 	if Input.is_action_just_pressed("ui_right"):
 		fillRatio += 1
-		print(fillRatio)
 		createMapAtTimeZero()
 		timeAdvance()
 	if Input.is_action_just_pressed("ui_left"):
 		fillRatio -= 1
-		print(fillRatio)
 		createMapAtTimeZero()
 		timeAdvance()
 	if Input.is_action_just_pressed("ui_up"):
 		fillRatio += 5
-		print(fillRatio)
 		createMapAtTimeZero()
 		timeAdvance()
 	if Input.is_action_just_pressed("ui_down"):
 		fillRatio -= 5
-		print(fillRatio)
 		createMapAtTimeZero()
 		timeAdvance()
 	if Input.is_action_just_pressed('wall_lower'):
@@ -74,7 +69,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		mousePointer = get_global_mouse_position()
 		update()
 	if ! makingARoom && Input.is_mouse_button_pressed(1):
-		print('Starting a room')
 		mouseRoomCenter = get_global_mouse_position()
 		mouseRoomEdge = mouseRoomCenter
 		makingARoom = true
@@ -116,7 +110,6 @@ func makeARoom(center: Vector2, edge: Vector2) -> void:
 					1.0
 				)
 			)
-			print(percent)
 			if rnd.randf() < percent:
 				tile = Tiles.DIRT
 			map[x][y] = tile
