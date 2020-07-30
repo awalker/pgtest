@@ -285,18 +285,14 @@ func findTileGroup(x: int, y: int, type: int):
 func findRestOfGroup(data: Array, type: int) -> Array:
 	var group: Array = data[0]
 	var queue: Array = data[1]
-	var _x := 0
-	var _y := 0
 
 	var mine: Vector2 = queue.pop_front()
 	if mine == null:
 		return data
-	_x = mine.x as int
-	_y = mine.y as int
 
-	var x = clamp(_x, 0, mapWidth)
-	var y = clamp(_y, 0, mapHeight)
-	if x != _x || y != _y:
+	var x = clamp(mine.x, 0, mapWidth)
+	var y = clamp(mine.y, 0, mapHeight)
+	if x != mine.x || y != mine.y:
 		return data
 	var v := Vector2(x,y)
 	if !group.has(v) && map[x][y] == type:
