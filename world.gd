@@ -30,7 +30,7 @@ var makingARoom := false
 var mousePointer := Vector2.ZERO
 var mouseRoomCenter: Vector2
 var mouseRoomEdge: Vector2
-var highlightTiles: Array
+var highlightTiles: TileGroup
 
 
 class Room:
@@ -50,25 +50,91 @@ class Room:
 		room.connected.append(self)
 
 class TileGroup:
-	var regions := []
+	var regions := {}
+	var _sz := 0
 
-	func canVectorJoin(v: Vector2) -> bool:
-		var t := Rect2(v, Vector2(1,1))
-		return canRectJoin(t)
-
-	func canRectJoin(t: Rect2) -> bool:
+	func insert(x: int, y: int) -> void:
+		_sz = 0
 		if regions.empty():
-			regions.append(t)
-			return true
+			regions[x] = [[y,y]]
+			return 
 		else:
-			for r in regions:
-				if r.intersects(t, true):
+			if !regions.has(x):
+				regions[x] = [[y,y]]
+				return
+			var ys: Array = regions.get(x)
+			for i in ys.size():
+				var r: Array = ys[i]
+				if y < r[0]-1:
+					ys.insert(i, [y,y])
+					return
+				if y >= r[0] && y <= r[1]:
+					return
+				elif r[0]-1 == y:
+					r[0] = y
+					normalizeRegion(r)
+					return
+				elif r[1]+1 == y:
+					r[1] = y
+					normalizeRegion(r)
+					return 
+			ys.append([y,y])
+
+	func normalize() -> void:
+		_sz = 0
+		for x in regions.keys():
+			normalizeX(regions[x])
+
+	func normalizeRegion(r: Array) -> void:
+		var a := min(r[0], r[1])
+		var b := max(r[0], r[1])
+		r[0] = a
+		r[1] = b
+
+	func normalizeX(ys: Array, offset := 0) -> void:
+		if ys.size() > offset + 1:
+			if ys[offset][1] >= ys[offset+1][0]:
+				ys[offset][0] = min(ys[offset][0], ys[offset+1][0])
+				ys[offset][1] = max(ys[offset][1], ys[offset+1][1])
+				ys.remove(offset + 1)
+				normalizeX(ys, offset)
+			# elif ys[offset][0] <= ys[offset+1][1]:
+				# ys[offset][0] = ys[offset+1][1]
+				# ys.remove(offset + 1)
+				# normalizeX(ys, offset)
+			else:
+				normalizeX(ys, offset + 1)
+
+	func isIn(x: int, y: int) -> bool:
+		if regions.empty():
+			return false
+		if regions.has(x):
+			var ys: Array = regions.get(x)
+			for r in ys:
+				if y >= r[0] && y <= r[1]:
 					return true
 		return false
 
-	func draw(color: Color, node: Node2D) -> void:
-		for r in regions:
-			node.draw_rect(r, color, true)
+	func draw(color: Color, tileSize: int, node: Node2D) -> void:
+		for x in regions.keys():
+			var ys: Array = regions[x]
+			for yrange in ys:
+				var s := Vector2(x * tileSize,yrange[0] * tileSize)
+				var e := Vector2((x+1) * tileSize, (yrange[1]+1) * tileSize)
+				node.draw_rect(Rect2(s, e - s), color, true)
+
+	func size() -> int:
+		if _sz:
+			return _sz
+		var size := 0
+		for x in regions.keys():
+			var ys: Array = regions[x]
+			for yrange in ys:
+				size += (yrange[1] - yrange[0]) + 1
+		_sz = size
+		return size
+
+
 
 	# func addPoint(x:int, y:int) -> void:
 		# var r := Rect2(Vector2(x,y), Vector(1,1))
@@ -177,9 +243,7 @@ func _draw():
 		for r in rooms:
 			draw_circle(Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow)
 	if highlightTiles:
-		for t in highlightTiles:
-			draw_rect(Rect2(Vector2(t.x * tileSize, t.y * tileSize), Vector2(tileSize, tileSize)), Color("#00FF00" if working else "#0000FF"), true)
-
+		highlightTiles.draw(Color("#00FF00" if working else "#0000FF"), tileSize, self)
 
 func makeRooms() -> void:
 	var roomCount := rnd.randi_range(roomCountRange.x as int, roomCountRange.y as int)
@@ -234,7 +298,7 @@ func updateUI() -> void:
 
 
 func timeAdvance() -> void:
-	highlightTiles = []
+	highlightTiles = null
 	rooms = [] # Some rooms make join or disappear, so just start over
 	time += 1
 	for y in range(1, mapHeight - 1):
@@ -277,25 +341,25 @@ func findGroups(type: int) -> Array:
 		for x in range(mapWidth):
 			var tile:int = map[x][y]
 			if tile == type:
-				var v := Vector2(x,y)
+				# var v := Vector2(x,y)
 				var inGroup:= false
 				for g in groups:
-					if g.has(v):
+					if g.isIn(x,y):
 						inGroup = true
 						break
 				if !inGroup:
-					var tiles: Array = yield(findTileGroup(x,y, type), "completed")
+					var tiles: TileGroup = yield(findTileGroup(x,y, type), "completed")
 					groups.append(tiles)
 	return groups
 
-func queueIfOk(queue: Array, group: Array, x: int, y: int) -> void:
+func queueIfOk(queue: Array, group: TileGroup, x: int, y: int) -> void:
 	var v := Vector2(x,y)
-	if x >= 0 && x < mapWidth && y >= 0 && y < mapHeight && !queue.has(v) && !group.has(v):
+	if x >= 0 && x < mapWidth && y >= 0 && y < mapHeight && !queue.has(v) && !group.isIn(x,y):
 		queue.append(v)
 
 var runlimit = 250
 func findTileGroup(x: int, y: int, type: int):
-	var data := [[],[Vector2(x,y)]]
+	var data := [TileGroup.new(),[Vector2(x,y)]]
 	var start := OS.get_ticks_msec()
 	var elapsed := 0.0
 	var i := 0
@@ -312,11 +376,11 @@ func findTileGroup(x: int, y: int, type: int):
 			yield(get_tree(), "idle_frame")
 			start = OS.get_ticks_msec()
 	print("%f sec at run limit %d" % [elapsed / 1000.0, runlimit])
-	highlightTiles = data[0]
+	highlightTiles = data[0].normalize()
 	return data[0]
 
 func findRestOfGroup(data: Array, type: int) -> Array:
-	var group: Array = data[0]
+	var group: TileGroup = data[0]
 	var queue: Array = data[1]
 
 	var mine: Vector2 = queue.pop_front()
@@ -327,9 +391,9 @@ func findRestOfGroup(data: Array, type: int) -> Array:
 	var y = clamp(mine.y, 0, mapHeight)
 	if x != mine.x || y != mine.y:
 		return data
-	var v := Vector2(x,y)
-	if !group.has(v) && map[x][y] == type:
-		group.append(v)
+	# var v := Vector2(x,y)
+	if !group.isIn(x,y) && map[x][y] == type:
+		group.insert(x,y)
 		queueIfOk(queue,group,x-1, y)
 		queueIfOk(queue,group,x+1, y)
 		queueIfOk(queue,group,x, y-1)
@@ -337,7 +401,7 @@ func findRestOfGroup(data: Array, type: int) -> Array:
 	return data
 
 func createMapAtTimeZero() -> void:
-	highlightTiles = []
+	highlightTiles = null
 	if level_seed:
 		rnd.seed = hash(level_seed)
 	else:
