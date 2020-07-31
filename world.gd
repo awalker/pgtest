@@ -8,7 +8,7 @@ export (int) var tileSize := 32
 export (int) var fillRatio := 55
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
-export (int) var minRoomArea := 50
+export (int) var minRoomArea := 75
 export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
@@ -98,10 +98,6 @@ class TileGroup:
 				ys[offset][1] = max(ys[offset][1], ys[offset+1][1])
 				ys.remove(offset + 1)
 				normalizeX(ys, offset)
-			# elif ys[offset][0] <= ys[offset+1][1]:
-				# ys[offset][0] = ys[offset+1][1]
-				# ys.remove(offset + 1)
-				# normalizeX(ys, offset)
 			else:
 				normalizeX(ys, offset + 1)
 
@@ -122,6 +118,13 @@ class TileGroup:
 				var s := Vector2(x * tileSize,yrange[0] * tileSize)
 				var e := Vector2((x+1) * tileSize, (yrange[1]+1) * tileSize)
 				node.draw_rect(Rect2(s, e - s), color, true)
+
+	func setTile(map: Array, type: int) -> void:
+		for x in regions.keys():
+			var ys: Array = regions[x]
+			for yrange in ys:
+				for y in range(yrange[0], yrange[1]+1):
+					map[x][y] = type
 
 	func size() -> int:
 		if _sz:
@@ -330,9 +333,37 @@ func mapToTileMap() -> void:
 			tileMap.set_cell(x, y, map[x][y])
 	update()
 
+func walls_sort_small(a: TileGroup, b: TileGroup) -> bool:
+	return a.size() < b.size()
+
 func cull() -> void:
 	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
 	print("Found %d wall groups" % walls.size())
+	walls.sort_custom(self, "walls_sort_small")
+	var i := 0
+	while i < walls.size():
+		yield(get_tree(), "idle_frame")
+		if walls[0].size() < minWallArea:
+			print(walls[0].size())
+			# make all the walls in this tile group into dirt
+			walls[0].setTile(map, Tiles.DIRT)
+			walls.remove(0)
+		else:
+			break
+	var dirts: Array = yield(findGroups(Tiles.DIRT), "completed")
+	print("Found %d dirt groups" % dirts.size())
+	dirts.sort_custom(self, "walls_sort_small")
+	i = 0
+	while i < dirts.size():
+		yield(get_tree(), "idle_frame")
+		if dirts[0].size() < minRoomArea:
+			print(dirts[0].size())
+			# make all the walls in this tile group into dirt
+			dirts[0].setTile(map, Tiles.WALL)
+			dirts.remove(0)
+		else:
+			break
+	mapToTileMap()
 
 func findGroups(type: int) -> Array:
 	var groups := []
