@@ -202,12 +202,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("make_rooms"):
 		_on_createRooms_pressed()
 	if Input.is_action_just_pressed("cull"):
-		working = true
 		cull()
-		mapToTileMap()
-		updateUI()
-		update()
-		working = false
 	if event is InputEventMouseMotion:
 		mousePointer = get_global_mouse_position()
 		update()
@@ -233,6 +228,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			mapToTileMap()
 		update()
 
+onready var workingUI = $CanvasLayer/Working
+func _process(_delta):
+	if working != workingUI.visible:
+		print('Change working ui')
+		workingUI.visible = working
 
 func _draw():
 	if makingARoom:
@@ -305,6 +305,10 @@ func updateUI() -> void:
 	$"CanvasLayer/UI/vbox/Wall Limit".value = wallsLimit
 	$"CanvasLayer/UI/vbox/Min Wall".value = minWallArea
 	$"CanvasLayer/UI/vbox/Min Room Area".value = minRoomArea
+	$"CanvasLayer/UI/vbox/Min Rooms".value = roomCountRange.x as int
+	$"CanvasLayer/UI/vbox/Max Rooms".value = roomCountRange.y as int
+	$"CanvasLayer/UI/vbox/Min Room Size".value = roomSizeRange.x as int
+	$"CanvasLayer/UI/vbox/Max Room Size".value = roomSizeRange.y as int
 
 
 func timeAdvance() -> void:
@@ -344,6 +348,7 @@ func walls_sort_small(a: TileGroup, b: TileGroup) -> bool:
 	return a.size() < b.size()
 
 func cull() -> void:
+	working = true
 	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
@@ -371,6 +376,7 @@ func cull() -> void:
 		else:
 			break
 	mapToTileMap()
+	working = false
 
 func findGroups(type: int) -> Array:
 	var groups := []
@@ -525,3 +531,19 @@ func _on_Min_Room_Area_value_changed(value):
 
 func _on_Min_Wall_value_changed(value):
 	minWallArea = value
+
+
+func _on_Min_Rooms_value_changed(value):
+	roomCountRange.x = value
+
+
+func _on_Max_Rooms_value_changed(value):
+	roomCountRange.y = value
+
+
+func _on_Min_Room_Size_value_changed(value):
+	roomSizeRange.x = value
+
+
+func _on_Max_Room_Size_value_changed(value):
+	roomSizeRange.y = value

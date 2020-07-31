@@ -154,7 +154,7 @@ __meta__ = {
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = -164.0
+margin_left = -214.0
 grow_horizontal = 2
 size_flags_vertical = 3
 __meta__ = {
@@ -164,9 +164,9 @@ __meta__ = {
 [node name="vbox" type="VBoxContainer" parent="CanvasLayer/UI"]
 margin_left = 7.0
 margin_top = 7.0
-margin_right = 157.0
+margin_right = 207.0
 margin_bottom = 593.0
-rect_min_size = Vector2( 150, 0 )
+rect_min_size = Vector2( 200, 0 )
 size_flags_horizontal = 3
 size_flags_vertical = 3
 __meta__ = {
@@ -175,17 +175,17 @@ __meta__ = {
 
 [node name="Map W" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_top = 0.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 28.0
 label_text = "Map W"
 
 [node name="Map H" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
-margin_right = 150.0
+margin_right = 200.0
 label_text = "Map H"
 
 [node name="Fill Ratio" parent="CanvasLayer/UI/vbox" instance=ExtResource( 4 )]
 margin_top = 64.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 92.0
 script = ExtResource( 5 )
 label_text = ""
@@ -193,58 +193,106 @@ value = null
 
 [node name="Wall Limit" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_top = 96.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 124.0
 label_text = "Wall Limit"
 
 [node name="Min Room Area" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_top = 128.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 156.0
 label_text = "Min Room Area"
 
 [node name="Min Wall" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_top = 160.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 188.0
 label_text = "Min Wall"
 
-[node name="buttonBox" type="VBoxContainer" parent="CanvasLayer/UI/vbox"]
+[node name="Min Rooms" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_top = 192.0
-margin_right = 150.0
+margin_right = 200.0
+margin_bottom = 220.0
+label_text = "Min Rooms"
+
+[node name="Max Rooms" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
+margin_top = 224.0
+margin_right = 200.0
+margin_bottom = 252.0
+label_text = "Max Rooms"
+
+[node name="Min Room Size" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
+margin_top = 256.0
+margin_right = 200.0
+margin_bottom = 284.0
+label_text = "Min Room Size"
+
+[node name="Max Room Size" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
+margin_top = 288.0
+margin_right = 200.0
+margin_bottom = 316.0
+label_text = "Max Room Size"
+
+[node name="buttonBox" type="VBoxContainer" parent="CanvasLayer/UI/vbox"]
+margin_top = 320.0
+margin_right = 200.0
 margin_bottom = 586.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="regen" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 22.0
 text = "Regenerate"
 
 [node name="createRooms" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 26.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 48.0
 text = "Create Room"
 
 [node name="smooth" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 52.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 74.0
 text = "Smooth"
 
 [node name="autosmooth" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 78.0
-margin_right = 150.0
+margin_right = 200.0
 margin_bottom = 102.0
 size_flags_horizontal = 5
 text = "Auto Smooth"
+
+[node name="Working" type="PanelContainer" parent="CanvasLayer"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -33.0
+margin_top = -14.0
+margin_right = 33.0
+margin_bottom = 14.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="CanvasLayer/Working"]
+margin_left = 7.0
+margin_top = 7.0
+margin_right = 59.0
+margin_bottom = 21.0
+text = "Working"
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map W" to="." method="_on_Map_W_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map H" to="." method="_on_Map_H_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Fill Ratio" to="." method="_on_Fill_Ratio_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Wall Limit" to="." method="_on_Wall_Limit_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Min Room Area" to="." method="_on_Min_Room_Area_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Min Wall" to="." method="_on_Min_Wall_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/UI/vbox/Min Rooms" to="." method="_on_Min_Rooms_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/UI/vbox/Max Rooms" to="." method="_on_Max_Rooms_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/UI/vbox/Min Room Size" to="." method="_on_Min_Room_Size_value_changed"]
+[connection signal="value_changed" from="CanvasLayer/UI/vbox/Max Room Size" to="." method="_on_Max_Room_Size_value_changed"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/regen" to="." method="_on_regen_pressed"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/createRooms" to="." method="_on_createRooms_pressed"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/smooth" to="." method="_on_smooth_pressed"]
