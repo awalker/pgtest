@@ -159,10 +159,14 @@ __meta__ = {
 margin_top = 0.0
 margin_right = 200.0
 margin_bottom = 28.0
+focus_neighbour_bottom = NodePath("../Map H")
+focus_next = NodePath("../Map H")
 label_text = "Map W"
 
 [node name="Map H" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_right = 200.0
+focus_neighbour_bottom = NodePath("../Fill Ratio")
+focus_next = NodePath("../Fill Ratio")
 label_text = "Map H"
 
 [node name="Fill Ratio" parent="CanvasLayer/UI/vbox" instance=ExtResource( 4 )]
@@ -225,18 +229,21 @@ size_flags_vertical = 3
 margin_right = 200.0
 margin_bottom = 22.0
 text = "Regenerate"
+flat = false
 
 [node name="createRooms" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 26.0
 margin_right = 200.0
 margin_bottom = 48.0
 text = "Create Room"
+flat = false
 
 [node name="smooth" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 52.0
 margin_right = 200.0
 margin_bottom = 74.0
 text = "Smooth"
+flat = false
 
 [node name="autosmooth" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 78.0
@@ -250,6 +257,14 @@ margin_top = 106.0
 margin_right = 200.0
 margin_bottom = 128.0
 text = "Cull Small Features"
+flat = false
+
+[node name="connectRooms" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_top = 132.0
+margin_right = 200.0
+margin_bottom = 154.0
+text = "Connect Rooms"
+flat = false
 
 [node name="Working" type="PanelContainer" parent="CanvasLayer"]
 anchor_left = 0.5
@@ -285,3 +300,4 @@ text = "Working"
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/smooth" to="." method="_on_smooth_pressed"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/cull" to="." method="_on_cull_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/connectRooms" to="." method="_on_cull_pressed"]
