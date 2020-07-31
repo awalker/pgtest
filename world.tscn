@@ -146,3 +146,50 @@ text = "Walls"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="UI" type="PanelContainer" parent="CanvasLayer"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -38.0
+grow_horizontal = 2
+
+[node name="vbox" type="VBoxContainer" parent="CanvasLayer/UI"]
+margin_left = 7.0
+margin_top = 7.0
+margin_right = 1017.0
+margin_bottom = 31.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="buttonBox" type="HBoxContainer" parent="CanvasLayer/UI/vbox"]
+margin_right = 1010.0
+margin_bottom = 24.0
+
+[node name="regen" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_right = 84.0
+margin_bottom = 24.0
+text = "Regenerate"
+
+[node name="createRooms" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_left = 88.0
+margin_right = 182.0
+margin_bottom = 24.0
+text = "Create Room"
+
+[node name="smooth" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_left = 186.0
+margin_right = 247.0
+margin_bottom = 24.0
+text = "Smooth"
+
+[node name="autosmooth" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_left = 251.0
+margin_right = 362.0
+margin_bottom = 24.0
+text = "Auto Smooth"
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/regen" to="." method="_on_regen_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/createRooms" to="." method="_on_createRooms_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/smooth" to="." method="_on_smooth_pressed"]
+[connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]

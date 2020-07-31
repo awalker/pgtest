@@ -13,6 +13,8 @@ export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
 
+var autoSmooth := true
+
 var rooms := []
 
 var rnd := RandomNumberGenerator.new()
@@ -160,12 +162,14 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if working:
 		return
+	if Input.is_action_just_pressed("toggle_ui"):
+		var item := $CanvasLayer/UI
+		item.visible = !item.visible
 	if Input.is_action_just_pressed("ui_accept"):
 		timeAdvance()
 		mapToTileMap()
 	if Input.is_action_just_pressed("ui_cancel"):
-		createMapAtTimeZero()
-		mapToTileMap()
+		_on_regen_pressed()
 	if Input.is_action_just_pressed("ui_right"):
 		fillRatio += 1
 		createMapAtTimeZero()
@@ -196,12 +200,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		createMapAtTimeZero()
 		mapToTileMap()
 	if Input.is_action_just_pressed("make_rooms"):
-		fillRatio = 40
-		createMapAtTimeZero()
-		makeRooms()
-		mapToTileMap()
-		updateUI()
-		update()
+		_on_createRooms_pressed()
 	if Input.is_action_just_pressed("cull"):
 		working = true
 		cull()
@@ -298,6 +297,8 @@ func updateUI() -> void:
 	$CanvasLayer/h/Time.text = "Time: " + str(time)
 	$CanvasLayer/h/fillRatio.text = "Fill Ratio: " + str(fillRatio)
 	$CanvasLayer/h/wallsLimit.text = "Walls Limits: " + str(wallsLimit)
+	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
+	asBtn.pressed = autoSmooth
 
 
 func timeAdvance() -> void:
@@ -457,3 +458,38 @@ func createMapAtTimeZero() -> void:
 			tmap[y] = tile
 	updateUI()
 	# timeAdvance()
+
+func doAutoSmoothing():
+	if autoSmooth:
+		for _i in range(time, maxTime):
+			timeAdvance()
+
+
+func _on_smooth_pressed():
+	timeAdvance()
+	mapToTileMap()
+	updateUI()
+	update()
+
+
+func _on_createRooms_pressed():
+	createMapAtTimeZero()
+	makeRooms()
+	doAutoSmoothing()
+	mapToTileMap()
+	updateUI()
+	update()
+
+
+func _on_regen_pressed():
+	createMapAtTimeZero()
+	doAutoSmoothing()
+	mapToTileMap()
+	updateUI()
+	update()
+
+
+func _on_autosmooth_toggled(button_pressed):
+	print(button_pressed)
+	autoSmooth = button_pressed
+	updateUI()
