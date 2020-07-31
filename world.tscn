@@ -171,7 +171,6 @@ margin_right = 200.0
 margin_bottom = 92.0
 script = ExtResource( 5 )
 label_text = ""
-value = null
 
 [node name="Wall Limit" parent="CanvasLayer/UI/vbox" instance=ExtResource( 3 )]
 margin_top = 96.0

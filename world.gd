@@ -170,39 +170,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		item.visible = !item.visible
 	if Input.is_action_just_pressed("ui_cancel"):
 		get_tree().quit()
-	if Input.is_action_just_pressed("ui_right"):
-		fillRatio += 1
-		createMapAtTimeZero()
-		timeAdvance()
-		mapToTileMap()
-	if Input.is_action_just_pressed("ui_left"):
-		fillRatio -= 1
-		createMapAtTimeZero()
-		timeAdvance()
-		mapToTileMap()
-	if Input.is_action_just_pressed("ui_up"):
-		fillRatio += 5
-		createMapAtTimeZero()
-		timeAdvance()
-		mapToTileMap()
-	if Input.is_action_just_pressed("ui_down"):
-		fillRatio -= 5
-		createMapAtTimeZero()
-		timeAdvance()
-		mapToTileMap()
-	if Input.is_action_just_pressed('wall_lower'):
-		wallsLimit -= 1 * -1 if Input.is_action_pressed("raise_mod") else 1
-		createMapAtTimeZero()
-		timeAdvance()
-		mapToTileMap()
 	if Input.is_action_just_pressed("clear"):
 		fillRatio = 0
 		createMapAtTimeZero()
 		mapToTileMap()
-	if Input.is_action_just_pressed("make_rooms"):
-		_on_createRooms_pressed()
-	if Input.is_action_just_pressed("cull"):
-		cull()
 	if event is InputEventMouseMotion:
 		mousePointer = get_global_mouse_position()
 		update()
@@ -346,6 +317,8 @@ func walls_sort_small(a: TileGroup, b: TileGroup) -> bool:
 	return a.size() < b.size()
 
 func cull() -> void:
+	if working:
+		return
 	working = true
 	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
 	print("Found %d wall groups" % walls.size())
