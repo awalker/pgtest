@@ -148,6 +148,12 @@ class TileGroup:
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	# $"CanvasLayer/UI/vbox/Map W".label_text = "Map W"
+	# $"CanvasLayer/UI/vbox/Map H".label_text = "Map H"
+	mapCameraUpdated()
+	_on_regen_pressed()
+
+func mapCameraUpdated() -> void:
 	var w = (mapWidth) * tileSize
 	var h = (mapHeight) * tileSize
 	mapCamera.position = Vector2(w / 2, h / 2)
@@ -155,9 +161,6 @@ func _ready() -> void:
 	var zy = h / (get_viewport_rect().size.y)
 	var z = max(zx, zy)
 	mapCamera.zoom = Vector2(z, z)
-	createMapAtTimeZero()
-	mapToTileMap()
-
 
 func _unhandled_input(event: InputEvent) -> void:
 	if working:
@@ -294,10 +297,14 @@ func updateUI() -> void:
 	$CanvasLayer/h/Time.text = "Time: " + str(time)
 	$CanvasLayer/h/fillRatio.text = "Fill Ratio: " + str(fillRatio)
 	$CanvasLayer/h/wallsLimit.text = "Walls Limits: " + str(wallsLimit)
-	var frTxt: TextEdit = $CanvasLayer/UI/vbox/form/fillRatioTxt
-	frTxt.text = str(fillRatio)
+	$"CanvasLayer/UI/vbox/Fill Ratio".value = fillRatio
 	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
 	asBtn.pressed = autoSmooth
+	$"CanvasLayer/UI/vbox/Map H".value = mapHeight
+	$"CanvasLayer/UI/vbox/Map W".value = mapWidth
+	$"CanvasLayer/UI/vbox/Wall Limit".value = wallsLimit
+	$"CanvasLayer/UI/vbox/Min Wall".value = minWallArea
+	$"CanvasLayer/UI/vbox/Min Room Area".value = minRoomArea
 
 
 func timeAdvance() -> void:
@@ -484,6 +491,7 @@ func _on_regen_pressed():
 	createMapAtTimeZero()
 	doAutoSmoothing()
 	mapToTileMap()
+	mapCameraUpdated()
 	updateUI()
 	update()
 
@@ -494,10 +502,26 @@ func _on_autosmooth_toggled(button_pressed):
 	updateUI()
 
 
-func _on_fillRatioTxt_focus_exited():
-	var txt : TextEdit = $CanvasLayer/UI/vbox/form/fillRatioTxt
-	print(txt.text)
-	var current = str(fillRatio)
-	if current != txt.text:
-		fillRatio = clamp(int(txt.text), 0, 100) as int
-		txt.text = str(fillRatio)
+func _on_Map_H_value_changed(value):
+	mapHeight = value
+
+
+func _on_Map_W_value_changed(value):
+	mapWidth = value
+
+
+func _on_Fill_Ratio_value_changed(value):
+	fillRatio = clamp(value, 0, 100) as int
+	$"CanvasLayer/UI/vbox/Fill Ratio".value = fillRatio
+
+
+func _on_Wall_Limit_value_changed(value):
+	wallsLimit = value
+
+
+func _on_Min_Room_Area_value_changed(value):
+	minRoomArea = value
+
+
+func _on_Min_Wall_value_changed(value):
+	minWallArea = value

@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "tool
+extends HBoxContainer
+class_name form_field
+
+export(String) var label_text:String# setget _set_label 
+var value:int = 0 setget _set_value, _get_value
+
+signal value_changed(value)
+
+
+func _ready():
+	if $Label && label_text:
+		$Label.text = label_text;
+	$txt.text = str(value)
+
+func _set_label(v: String) -> void:
+	label_text = v
+	if $Label && not Engine.editor_hint:
+		$Label.text = v
+
+func _set_value(v: int) -> void:
+	value = v
+	if $Label && label_text:
+		$Label.text = label_text;
+	$txt.text = str(v)
+
+func _get_value() -> int:
+	value = int($txt.text)
+	return value
+
+func _on_txt_focus_exited():
+	if not Engine.editor_hint:
+		emit_signal(\"value_changed\", self.value)
+"
+
+[node name="Map W" type="HBoxContainer"]
+margin_top = 32.0
+margin_right = 136.0
+margin_bottom = 60.0
+rect_min_size = Vector2( 0, 28 )
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.0
+script = SubResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="."]
+margin_top = 7.0
+margin_right = 66.0
+margin_bottom = 21.0
+size_flags_horizontal = 3
+text = "label"
+
+[node name="txt" type="TextEdit" parent="."]
+margin_left = 70.0
+margin_right = 136.0
+margin_bottom = 28.0
+size_flags_horizontal = 3
+text = "0"
+[connection signal="focus_exited" from="txt" to="." method="_on_txt_focus_exited"]
