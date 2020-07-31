@@ -165,11 +165,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("toggle_ui"):
 		var item := $CanvasLayer/UI
 		item.visible = !item.visible
-	if Input.is_action_just_pressed("ui_accept"):
-		timeAdvance()
-		mapToTileMap()
 	if Input.is_action_just_pressed("ui_cancel"):
-		_on_regen_pressed()
+		get_tree().quit()
 	if Input.is_action_just_pressed("ui_right"):
 		fillRatio += 1
 		createMapAtTimeZero()
@@ -297,6 +294,8 @@ func updateUI() -> void:
 	$CanvasLayer/h/Time.text = "Time: " + str(time)
 	$CanvasLayer/h/fillRatio.text = "Fill Ratio: " + str(fillRatio)
 	$CanvasLayer/h/wallsLimit.text = "Walls Limits: " + str(wallsLimit)
+	var frTxt: TextEdit = $CanvasLayer/UI/vbox/form/fillRatioTxt
+	frTxt.text = str(fillRatio)
 	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
 	asBtn.pressed = autoSmooth
 
@@ -493,3 +492,12 @@ func _on_autosmooth_toggled(button_pressed):
 	print(button_pressed)
 	autoSmooth = button_pressed
 	updateUI()
+
+
+func _on_fillRatioTxt_focus_exited():
+	var txt : TextEdit = $CanvasLayer/UI/vbox/form/fillRatioTxt
+	print(txt.text)
+	var current = str(fillRatio)
+	if current != txt.text:
+		fillRatio = clamp(int(txt.text), 0, 100) as int
+		txt.text = str(fillRatio)

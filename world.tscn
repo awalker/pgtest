@@ -151,21 +151,43 @@ __meta__ = {
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_top = -38.0
+margin_top = -70.0
 grow_horizontal = 2
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [node name="vbox" type="VBoxContainer" parent="CanvasLayer/UI"]
 margin_left = 7.0
 margin_top = 7.0
 margin_right = 1017.0
-margin_bottom = 31.0
+margin_bottom = 63.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="buttonBox" type="HBoxContainer" parent="CanvasLayer/UI/vbox"]
+[node name="form" type="HBoxContainer" parent="CanvasLayer/UI/vbox"]
 margin_right = 1010.0
-margin_bottom = 24.0
+margin_bottom = 28.0
+rect_min_size = Vector2( 0, 28 )
+
+[node name="fillRatioLbl" type="Label" parent="CanvasLayer/UI/vbox/form"]
+margin_top = 7.0
+margin_right = 55.0
+margin_bottom = 21.0
+text = "Fill Ratio"
+
+[node name="fillRatioTxt" type="TextEdit" parent="CanvasLayer/UI/vbox/form"]
+margin_left = 59.0
+margin_right = 1010.0
+margin_bottom = 28.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="buttonBox" type="HBoxContainer" parent="CanvasLayer/UI/vbox"]
+margin_top = 32.0
+margin_right = 1010.0
+margin_bottom = 56.0
 
 [node name="regen" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_right = 84.0
@@ -189,6 +211,7 @@ margin_left = 251.0
 margin_right = 362.0
 margin_bottom = 24.0
 text = "Auto Smooth"
+[connection signal="focus_exited" from="CanvasLayer/UI/vbox/form/fillRatioTxt" to="." method="_on_fillRatioTxt_focus_exited"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/regen" to="." method="_on_regen_pressed"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/createRooms" to="." method="_on_createRooms_pressed"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/smooth" to="." method="_on_smooth_pressed"]
