@@ -295,8 +295,6 @@ func makeARoom(center: Vector2, edge: Vector2) -> void:
 
 func updateUI() -> void:
 	$CanvasLayer/h/Time.text = "Time: " + str(time)
-	$CanvasLayer/h/fillRatio.text = "Fill Ratio: " + str(fillRatio)
-	$CanvasLayer/h/wallsLimit.text = "Walls Limits: " + str(wallsLimit)
 	$"CanvasLayer/UI/vbox/Fill Ratio".value = fillRatio
 	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
 	asBtn.pressed = autoSmooth
@@ -547,3 +545,7 @@ func _on_Min_Room_Size_value_changed(value):
 
 func _on_Max_Room_Size_value_changed(value):
 	roomSizeRange.y = value
+
+
+func _on_cull_pressed():
+	cull()

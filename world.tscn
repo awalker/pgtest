@@ -132,24 +132,6 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="fillRatio" type="Label" parent="CanvasLayer/h"]
-margin_left = 62.0
-margin_right = 114.0
-margin_bottom = 14.0
-text = "fill Ratio"
-__meta__ = {
-"_edit_use_anchors_": false
-}
-
-[node name="wallsLimit" type="Label" parent="CanvasLayer/h"]
-margin_left = 144.0
-margin_right = 179.0
-margin_bottom = 14.0
-text = "Walls"
-__meta__ = {
-"_edit_use_anchors_": false
-}
-
 [node name="UI" type="PanelContainer" parent="CanvasLayer"]
 anchor_left = 1.0
 anchor_right = 1.0
@@ -264,6 +246,12 @@ margin_bottom = 102.0
 size_flags_horizontal = 5
 text = "Auto Smooth"
 
+[node name="cull" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_top = 106.0
+margin_right = 200.0
+margin_bottom = 128.0
+text = "Cull Small Features"
+
 [node name="Working" type="PanelContainer" parent="CanvasLayer"]
 anchor_left = 0.5
 anchor_top = 0.5
@@ -297,3 +285,4 @@ text = "Working"
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/createRooms" to="." method="_on_createRooms_pressed"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/smooth" to="." method="_on_smooth_pressed"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/cull" to="." method="_on_cull_pressed"]
