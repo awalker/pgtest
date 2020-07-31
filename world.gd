@@ -33,27 +33,48 @@ var mousePointer := Vector2.ZERO
 var mouseRoomCenter: Vector2
 var mouseRoomEdge: Vector2
 var highlightTiles: TileGroup
+var listOfRooms := []
 
 
 class Room:
 	var center := Vector2.ZERO
 	var distance := 0
-	var connected := []
-	var tiles := []
-	var edges := []
-	var isConnectedToMain := false
-	var isMain := false
-
-	func isConnected(room: Room) -> bool:
-		return connected.has(room)
-
-	func connectRoom(room: Room) -> void:
-		connected.append(room)
-		room.connected.append(self)
 
 class TileGroup:
 	var regions := {}
 	var _sz := 0
+	var connected := []
+	var edges := []
+	var center := Vector2.ZERO
+	var isConnectedToMain := false
+	var isMain := false
+
+	func isConnected(room: TileGroup) -> bool:
+		for c in connected:
+			if c[0] == room:
+				return true
+		return false
+
+	func connectRoom(room: TileGroup, a: Vector2, b: Vector2) -> void:
+		connected.append([room,a,b])
+		room.connected.append([self,a,b])
+
+	func findEdges():
+		var minx := 9999999
+		var miny := 9999999
+		var maxy := -9999999
+		var maxx := -9999999
+		if edges.size() > 0:
+			return
+		for x in regions.keys():
+			minx = min(minx, x) as int
+			maxx = max(maxx, x) as int
+			for ys in regions.get(x):
+				miny = min(miny, ys[0]) as int
+				maxy = max(maxy, ys[1]) as int
+				edges.append(Vector2(x,ys[0]))
+				edges.append(Vector2(x,ys[1]))
+		center = Vector2((maxx-minx)/2.0,(maxy-miny)/2.0)
 
 	func insert(x: int, y: int) -> void:
 		_sz = 0
@@ -112,6 +133,46 @@ class TileGroup:
 				if y >= r[0] && y <= r[1]:
 					return true
 		return false
+
+	func findClosest(main: TileGroup, rooms: Array) -> Array:
+		findEdges()
+		var closestSq := 999999999999.0
+		var closestRoom: TileGroup
+		var closestVector: Vector2
+		var closestSelfVector: Vector2
+		for i in rooms.size():
+			var room : TileGroup = rooms[i]
+			room.findEdges()
+			if room == self:
+				continue
+			if isConnected(room):
+				continue
+			var tmp := room.center.distance_squared_to(center)
+			if tmp < closestSq:
+				closestSq = tmp
+				closestRoom = room
+		closestSq = 999999999999.0
+		if closestRoom:
+			for sv in edges:
+				var tmp := closestRoom.center.distance_squared_to(sv)
+				if tmp < closestSq:
+					closestSq = tmp
+					closestSelfVector = sv
+			closestSq = 999999999999.0
+			for v in closestRoom.edges:
+				var tmp : float = v.distance_squared_to(closestSelfVector)
+				if tmp < closestSq:
+					closestSq = tmp
+					closestVector = v
+			connectRoom(closestRoom, closestSelfVector, closestVector)
+		return [closestRoom, closestSelfVector, closestVector]
+
+	func drawConnections(color: Color, tileSize: int, node: Node2D) -> void:
+		for c in connected:
+			node.draw_line(c[1] * tileSize, c[2] * tileSize, color, 5.0)
+		for edge in edges:
+			var v: Vector2 = edge * tileSize
+			node.draw_rect(Rect2(v, Vector2(tileSize, tileSize)), color, true)
 
 	func draw(color: Color, tileSize: int, node: Node2D) -> void:
 		for x in regions.keys():
@@ -217,6 +278,10 @@ func _draw():
 			draw_circle(Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow)
 	if highlightTiles:
 		highlightTiles.draw(Color("#00FF00" if working else "#0000FF"), tileSize, self)
+	if listOfRooms:
+		for i in listOfRooms.size():
+			var r: TileGroup = listOfRooms[i]
+			r.drawConnections(Color.yellow, tileSize, self)
 
 func makeRooms() -> void:
 	var roomCount := rnd.randi_range(roomCountRange.x as int, roomCountRange.y as int)
@@ -316,8 +381,8 @@ func mapToTileMap() -> void:
 func walls_sort_small(a: TileGroup, b: TileGroup) -> bool:
 	return a.size() < b.size()
 
-func cull() -> void:
-	if working:
+func cull(alreadyWorking := false) -> void:
+	if working && !alreadyWorking:
 		return
 	working = true
 	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
@@ -347,7 +412,8 @@ func cull() -> void:
 		else:
 			break
 	mapToTileMap()
-	working = false
+	listOfRooms = dirts
+	working = alreadyWorking
 
 func findGroups(type: int) -> Array:
 	var groups := []
@@ -416,6 +482,7 @@ func findRestOfGroup(data: Array, type: int) -> Array:
 	return data
 
 func createMapAtTimeZero() -> void:
+	listOfRooms = []
 	highlightTiles = null
 	if level_seed:
 		rnd.seed = hash(level_seed)
@@ -446,6 +513,28 @@ func doAutoSmoothing():
 	if autoSmooth:
 		for _i in range(time, maxTime):
 			timeAdvance()
+
+func connectRooms(alreadyWorking := false):
+	if working && !alreadyWorking:
+		return
+	working = true
+	if listOfRooms.size() == 0:
+		yield(cull(true), "completed")
+	else:
+		yield(get_tree(), "idle_frame")
+	var mainRoom : TileGroup = listOfRooms[listOfRooms.size() - 1]
+	mainRoom.isMain = true
+	mainRoom.isConnectedToMain = true
+	mainRoom.findClosest(mainRoom, listOfRooms)
+
+	print("found %d rooms" % listOfRooms.size())
+	if listOfRooms.size() > 1:
+		for roomIndex in range(0, listOfRooms.size() - 1):
+			var room : TileGroup = listOfRooms[roomIndex]
+			room.findClosest(mainRoom, listOfRooms)
+
+	update()
+	working = alreadyWorking
 
 
 func _on_smooth_pressed():
@@ -522,3 +611,7 @@ func _on_Max_Room_Size_value_changed(value):
 
 func _on_cull_pressed():
 	cull()
+
+
+func _on_connectRooms_pressed():
+	connectRooms()

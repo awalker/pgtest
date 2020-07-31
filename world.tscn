@@ -300,4 +300,4 @@ text = "Working"
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/smooth" to="." method="_on_smooth_pressed"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/cull" to="." method="_on_cull_pressed"]
-[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/connectRooms" to="." method="_on_cull_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/connectRooms" to="." method="_on_connectRooms_pressed"]
