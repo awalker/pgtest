@@ -15,13 +15,13 @@ _global_script_classes=[ {
 "path": "res://world.gd"
 }, {
 "base": "HBoxContainer",
-"class": "form_field",
+"class": "FormField",
 "language": "GDScript",
 "path": "res://form_field.gd"
 } ]
 _global_script_class_icons={
 "CaveWorld": "",
-"form_field": ""
+"FormField": ""
 }
 
 [application]

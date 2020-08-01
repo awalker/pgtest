@@ -1,9 +1,9 @@
 tool
 extends HBoxContainer
-class_name FormField
+class_name TextField
 
 export(String) var label_text:String# setget _set_label 
-var value:int = 0 setget _set_value, _get_value
+var value:String = "" setget _set_value, _get_value
 
 signal value_changed(value)
 
@@ -18,14 +18,14 @@ func _set_label(v: String) -> void:
 	if $Label:
 		$Label.text = v
 
-func _set_value(v: int) -> void:
+func _set_value(v: String) -> void:
 	value = v
 	if $Label && label_text:
 		$Label.text = label_text;
-	$txt.text = str(v)
+	$txt.text = v
 
-func _get_value() -> int:
-	value = int($txt.text)
+func _get_value() -> String:
+	value = $txt.text
 	return value
 
 func _on_txt_focus_exited():
