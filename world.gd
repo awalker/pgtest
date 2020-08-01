@@ -5,7 +5,7 @@ export var level_seed: String
 export (int) var mapWidth := 256
 export (int) var mapHeight := 240
 export (int) var tileSize := 32
-export (int) var fillRatio := 55
+export (int) var fillRatio := 40
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
 export (int) var minRoomArea := 75
@@ -58,6 +58,8 @@ class TileGroup:
 	func connectRoom(room: TileGroup, a: Vector2, b: Vector2) -> void:
 		connected.append([room,a,b])
 		room.connected.append([self,a,b])
+		isConnectedToMain = room.isConnectedToMain || isConnectedToMain
+		room.isConnectedToMain = isConnectedToMain
 
 	func findEdges():
 		var minx := 9999999
@@ -74,7 +76,7 @@ class TileGroup:
 				maxy = max(maxy, ys[1]) as int
 				edges.append(Vector2(x,ys[0]))
 				edges.append(Vector2(x,ys[1]))
-		center = Vector2((maxx-minx)/2.0,(maxy-miny)/2.0)
+		center = Vector2(minx + (maxx-minx)/2.0,miny + (maxy-miny)/2.0)
 
 	func insert(x: int, y: int) -> void:
 		_sz = 0
@@ -134,7 +136,7 @@ class TileGroup:
 					return true
 		return false
 
-	func findClosest(main: TileGroup, rooms: Array) -> Array:
+	func findClosest(rooms: Array):
 		findEdges()
 		var closestSq := 999999999999.0
 		var closestRoom: TileGroup
@@ -151,23 +153,22 @@ class TileGroup:
 			if tmp < closestSq:
 				closestSq = tmp
 				closestRoom = room
-		closestSq = 999999999999.0
 		if closestRoom:
-			for sv in edges:
-				var tmp := closestRoom.center.distance_squared_to(sv)
-				if tmp < closestSq:
-					closestSq = tmp
-					closestSelfVector = sv
 			closestSq = 999999999999.0
-			for v in closestRoom.edges:
-				var tmp : float = v.distance_squared_to(closestSelfVector)
-				if tmp < closestSq:
-					closestSq = tmp
-					closestVector = v
+			closestSelfVector = center
+			closestVector = closestRoom.center
+			for sv in edges:
+				for v in closestRoom.edges:
+					var tmp : float = sv.distance_squared_to(v)
+					if tmp <= closestSq:
+						closestSq = tmp
+						closestSelfVector = sv
+						closestVector = v
 			connectRoom(closestRoom, closestSelfVector, closestVector)
-		return [closestRoom, closestSelfVector, closestVector]
 
 	func drawConnections(color: Color, tileSize: int, node: Node2D) -> void:
+		var worldCenter = center * tileSize
+		node.draw_rect(Rect2(worldCenter, Vector2(tileSize, tileSize)), Color.blue if isMain else Color.red, true)
 		for c in connected:
 			node.draw_line(c[1] * tileSize, c[2] * tileSize, color, 5.0)
 		for edge in edges:
@@ -525,13 +526,14 @@ func connectRooms(alreadyWorking := false):
 	var mainRoom : TileGroup = listOfRooms[listOfRooms.size() - 1]
 	mainRoom.isMain = true
 	mainRoom.isConnectedToMain = true
-	mainRoom.findClosest(mainRoom, listOfRooms)
 
 	print("found %d rooms" % listOfRooms.size())
 	if listOfRooms.size() > 1:
 		for roomIndex in range(0, listOfRooms.size() - 1):
 			var room : TileGroup = listOfRooms[roomIndex]
-			room.findClosest(mainRoom, listOfRooms)
+			room.findClosest(listOfRooms)
+
+	# TODO: Make sure all rooms are connected
 
 	update()
 	working = alreadyWorking
