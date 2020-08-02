@@ -148,15 +148,16 @@ class TileGroup:
 					return true
 		return false
 
-	func findClosest(rooms: Array):
-		"""Currently, this find a close-ish room and connects in together. 
+	func findClosest(scene: SceneTree, rooms: Array):
+		"""Currently, this find a close-ish room.
 		The first round of judges distance by center. Probably should just 
 		compare all the points everywhere"""
 		findEdges()
 		var closestSq := 999999999999.0
 		var closestRoom: TileGroup
-		var closestVector: Vector2
-		var closestSelfVector: Vector2
+		var closestVector: Vector2 = Vector2(999999, 999999)
+		var closestSelfVector: Vector2 = center
+		yield(scene, "idle_frame")
 		for i in rooms.size():
 			var room: TileGroup = rooms[i]
 			room.findEdges()
@@ -164,22 +165,20 @@ class TileGroup:
 				continue
 			if isConnected(room):
 				continue
-			var tmp := room.center.distance_squared_to(center)
-			if tmp < closestSq:
-				closestSq = tmp
-				closestRoom = room
-		if closestRoom:
-			closestSq = 999999999999.0
-			closestSelfVector = center
-			closestVector = closestRoom.center
 			for sv in edges:
-				for v in closestRoom.edges:
+				yield(scene, "idle_frame")
+				for v in room.edges:
 					var tmp: float = sv.distance_squared_to(v)
 					if tmp <= closestSq:
+						closestRoom = room
 						closestSq = tmp
 						closestSelfVector = sv
 						closestVector = v
-			connectRoom(closestRoom, closestSelfVector, closestVector)
+			# connectRoom(closestRoom, closestSelfVector, closestVector)
+		if closestRoom:
+			return [closestRoom, closestSelfVector, closestVector]
+		else:
+			return []
 
 	func drawConnections(color: Color, tileSize: int, node: Node2D) -> void:
 		var worldCenter = center * tileSize
@@ -243,13 +242,13 @@ func mapCameraUpdated() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if working:
-		return
 	if Input.is_action_just_pressed("toggle_ui"):
 		var item := $CanvasLayer/UI
 		item.visible = ! item.visible
 	if Input.is_action_just_pressed("ui_cancel"):
 		get_tree().quit()
+	if working:
+		return
 	if Input.is_action_just_pressed("clear"):
 		fillRatio = 0
 		createMapAtTimeZero()
@@ -567,7 +566,8 @@ func connectRooms(alreadyWorking := false):
 	if listOfRooms.size() > 1:
 		for roomIndex in range(0, listOfRooms.size() - 1):
 			var room: TileGroup = listOfRooms[roomIndex]
-			room.findClosest(listOfRooms)
+			var details = yield(room.findClosest(get_tree(), listOfRooms), "completed")
+			room.connectRoom(details[0], details[1], details[2])
 
 	# Make sure all rooms are connected
 	var energy = 0
@@ -592,17 +592,21 @@ func connectRooms(alreadyWorking := false):
 			var cgroup: Array = groups[1]
 			var c1: TileGroup
 			var d = 99999999999999
+			var cdetails: Array
 			for r1 in g1:
 				yield(get_tree(), "idle_frame")
 				for g2i in groups.size() - 1:
 					var g2: Array = groups[g2i + 1]
 					for r2 in g2:
-						var tmp: float = r1.center.distance_squared_to(r2.center)
+						var details: Array = yield(r1.findClosest(get_tree(), g2), "completed")
+						var tmp: float = details[1].distance_squared_to(details[2])
 						if tmp < d:
+							cdetails = details
 							d = tmp
 							c1 = r1
 							cgroup = g2
-			c1.findClosest(cgroup)
+			if cdetails:
+				c1.connectRoom(cdetails[0], cdetails[1], cdetails[2])
 	update()
 	working = alreadyWorking
 
