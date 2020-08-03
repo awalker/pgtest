@@ -23,7 +23,9 @@ var time := 0
 var working := false
 var thread: Thread
 var mapMutex: Mutex
+var optionsMutex: Mutex
 var genSemaphore: Semaphore
+var exitThread := false
 
 onready var tileMap: TileMap = $TileMap
 onready var mapCamera: Camera2D = $mapCamera
@@ -153,8 +155,8 @@ class Room:
 
 	func findClosest(scene: SceneTree, rooms: Array):
 		"""Currently, this find a close-ish room.
-		The first round of judges distance by center. Probably should just
-		compare all the points everywhere"""
+        The first round of judges distance by center. Probably should just
+        compare all the points everywhere"""
 		findEdges()
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -228,10 +230,26 @@ class Room:
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	# $"CanvasLayer/UI/vbox/Map W".label_text = "Map W"
-	# $"CanvasLayer/UI/vbox/Map H".label_text = "Map H"
+	mapMutex = Mutex.new()
+	optionsMutex = Mutex.new()
+	genSemaphore = Semaphore.new()
+	thread = Thread.new()
 	mapCameraUpdated()
+	thread.start(self, "_generator_thread_body()")
 	_on_regen_pressed()
+
+
+func _generator_thread_body():
+	while true:
+		genSemaphore.wait()
+
+		optionsMutex.lock()
+		var shouldExit := exitThread
+		optionsMutex.unlock()
+
+		if shouldExit:
+			break
+		#  TODO: Do generator stuff here
 
 
 func mapCameraUpdated() -> void:
