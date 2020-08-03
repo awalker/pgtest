@@ -5,7 +5,6 @@ Creates a cave system from cellular automata and/or blasting rooms into the wall
 
 # Milestone TODOs:
 
-* Improve connecting rooms to run quicker. See SL's cave gen YT videos
 * Actually carve out the tunnels
 * Disable relevant UI elements during "work"
 * Move generator parameters to a separate object that the generator can copy during work for greater thread safety

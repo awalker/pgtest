@@ -57,6 +57,12 @@ class Room:
 	var isConnectedToMain := false
 	var isMain := false
 
+	func setConnectedToMain():
+		if ! isConnectedToMain:
+			isConnectedToMain = true
+			for c in connected:
+				c[0].setConnectedToMain()
+
 	func isConnected(room: Room) -> bool:
 		if self == room:
 			return false
@@ -77,8 +83,10 @@ class Room:
 		print("Connect %s to %s" % [self, room])
 		connected.append([room, a, b])
 		room.connected.append([self, a, b])
-		isConnectedToMain = room.isConnectedToMain || isConnectedToMain
-		room.isConnectedToMain = isConnectedToMain
+		if isConnectedToMain && ! room.isConnectedToMain:
+			room.setConnectedToMain()
+		elif room.isConnectedToMain && ! isConnectedToMain:
+			setConnectedToMain()
 
 	func findEdges():
 		var minx := 9999999
@@ -255,6 +263,11 @@ func _generator_thread_body(_userData):
 		if shouldExit:
 			break
 		#  Do generator stuff here
+		exitMutex.lock()
+		if working:
+			continue
+		working = true
+		exitMutex.unlock()
 		optionsMutex.lock()
 		var _action := genAction
 		match _action:
@@ -269,6 +282,9 @@ func _generator_thread_body(_userData):
 			"connectRooms":
 				_connectRooms()
 		optionsMutex.unlock()
+		exitMutex.lock()
+		working = false
+		exitMutex.unlock()
 
 
 func mapCameraUpdated() -> void:
@@ -291,7 +307,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().quit()
 
 	# multi-threading
-	exitMutex.lock()
+	var ok := exitMutex.try_lock()
+	if ok != OK:
+		return
 	var _working := working
 	exitMutex.unlock()
 
@@ -349,15 +367,22 @@ func _draw():
 			radius = mouseRoomCenter.distance_to(mouseRoomEdge)
 		draw_circle(mouseRoomCenter, radius, Color.red)
 	draw_circle(mousePointer, 15.0, Color.green)
-	# TODO: Either get mutexes or make copies or rooms, highlights, etc
+	# Either get mutexes or make copies or rooms, highlights, etc
+	var _highlights: Room
+	var _list: Array
+	if mapMutex.try_lock() == OK:
+		_highlights = highlightTiles
+		_list = listOfRooms
+		if _highlights:
+			_highlights.draw(Color("#00FF00" if working else "#0000FF"), tileSize, self)
+		mapMutex.unlock()
+
 	if rooms:
 		for r in rooms:
 			draw_circle(Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow)
-	if highlightTiles:
-		highlightTiles.draw(Color("#00FF00" if working else "#0000FF"), tileSize, self)
-	if listOfRooms:
-		for i in listOfRooms.size():
-			var r: Room = listOfRooms[i]
+	if _list:
+		for i in _list.size():
+			var r: Room = _list[i]
 			r.drawConnections(Color.yellow, tileSize, self)
 
 
@@ -469,13 +494,7 @@ func walls_sort_small(a: Room, b: Room) -> bool:
 	return a.size() < b.size()
 
 
-func cull(alreadyWorking := false) -> void:
-	exitMutex.lock()
-	if working && ! alreadyWorking:
-		exitMutex.unlock()
-		return
-	working = true
-	exitMutex.unlock()
+func cull() -> void:
 	var walls: Array = findGroups(Tiles.WALL)
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
@@ -506,9 +525,7 @@ func cull(alreadyWorking := false) -> void:
 	listOfRooms = dirts
 	mapMutex.unlock()
 	call_deferred("mapToTileMap")
-	exitMutex.lock()
-	working = alreadyWorking
-	exitMutex.unlock()
+	call_deferred("update")
 
 
 func findGroups(type: int) -> Array:
@@ -617,67 +634,82 @@ func doAutoSmoothing():
 			timeAdvance()
 
 
-func _connectRooms(alreadyWorking := false):
-	exitMutex.lock()
-	if working && ! alreadyWorking:
-		exitMutex.unlock()
-		return
-	working = true
-	exitMutex.unlock()
+func _connectRooms(forceConnect := false):
+	mapMutex.lock()
 	if listOfRooms.size() == 0:
-		cull(true)
+		cull()
+	print("_connectRooms room count %d" % listOfRooms.size())
 	var mainRoom: Room = listOfRooms[listOfRooms.size() - 1]
 	mainRoom.isMain = true
 	mainRoom.isConnectedToMain = true
 
 	print("found %d rooms" % listOfRooms.size())
-	if listOfRooms.size() > 1:
-		for roomIndex in range(0, listOfRooms.size() - 1):
-			var room: Room = listOfRooms[roomIndex]
-			var details = room.findClosest(listOfRooms)
-			room.connectRoom(details[0], details[1], details[2])
+	mapMutex.unlock()
+	# if listOfRooms.size() > 1:
+	# 	for roomIndex in range(0, listOfRooms.size() - 1):
+	# 		var room: Room = listOfRooms[roomIndex]
+	# 		var details = room.findClosest(listOfRooms)
+	# 		room.connectRoom(details[0], details[1], details[2])
 
 	# Make sure all rooms are connected
-	var energy = 0
-	while energy < 4:
-		energy += 1
-		var groups := []  # we need a better way to build our groups, this isn't accounting for friend-of-a-friend, etc
+	mapMutex.lock()
+	var groupMain := []
+	var groupDisconnected := []
+	if forceConnect:
 		for r in listOfRooms:
-			var found := false
-			for g in groups:
-				found = g.has(r)
-				if found:
-					break
-			if not found:
-				groups.append(r.getConnectedRooms())
-		print("number of groups %d" % groups.size())
-		if groups.size() == 1:
-			# only one group, everything is connected
-			break
-		else:
-			# multiple groups. join the closest rooms
-			var g1: Array = groups[0]
-			# var cgroup: Array = groups[1]
-			var c1: Room
-			var d = 99999999999999
-			var cdetails: Array
-			for r1 in g1:
-				for g2i in groups.size() - 1:
-					var g2: Array = groups[g2i + 1]
-					for r2 in g2:
-						var details: Array = r1.findClosest(get_tree(), g2)
-						var tmp: float = details[1].distance_squared_to(details[2])
-						if tmp < d:
-							cdetails = details
-							d = tmp
-							c1 = r1
-							# cgroup = g2
-			if cdetails:
-				c1.connectRoom(cdetails[0], cdetails[1], cdetails[2])
-	update()
-	exitMutex.lock()
-	working = alreadyWorking
-	exitMutex.unlock()
+			if groupMain.has(r) || groupDisconnected.has(r):
+				continue
+			if r.isConnectedToMain:
+				groupMain.append(r)
+			else:
+				groupDisconnected.append(r)
+	else:
+		groupMain = listOfRooms
+		groupDisconnected = listOfRooms
+	print(
+		(
+			"number of groups disconnected %d group main %d force %s"
+			% [groupDisconnected.size(), groupMain.size(), forceConnect]
+		)
+	)
+	if groupDisconnected.size() == 0:
+		# only one group, everything is connected
+		mapMutex.unlock()
+		call_deferred("update")
+	else:
+		# multiple groups. join the closest rooms
+		# var cgroup: Array = groups[1]
+		var c1: Room
+		var d = 99999999999999
+		var cdetails := []
+		for r1 in groupMain:
+			print("r1 %s" % r1)
+			if cdetails.size() and not forceConnect:
+				cdetails = []
+			if not forceConnect and r1.connected.size() > 0:
+				print("r1 is connected. Skipping")
+				continue
+			for g2i in groupDisconnected.size():
+				var r2: Room = groupDisconnected[g2i]
+				if r1 == r2:
+					print("r1 == r2. Skipping")
+					continue
+				if not forceConnect and r2.connected.size() > 0:
+					continue
+				var details: Array = r1.findClosest(groupDisconnected)
+				var tmp: float = details[1].distance_squared_to(details[2])
+				if tmp < d:
+					cdetails = details
+					d = tmp
+					c1 = r1
+					# cgroup = g2
+					if not forceConnect:
+						c1.connectRoom(cdetails[0], cdetails[1], cdetails[2])
+						break
+		if cdetails.size():
+			c1.connectRoom(cdetails[0], cdetails[1], cdetails[2])
+		mapMutex.unlock()
+		_connectRooms(true)
 
 
 # Thread must be disposed (or "joined"), for portability.
