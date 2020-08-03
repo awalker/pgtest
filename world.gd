@@ -24,7 +24,9 @@ var working := false
 var thread: Thread
 var mapMutex: Mutex
 var optionsMutex: Mutex
+var exitMutex: Mutex
 var genSemaphore: Semaphore
+var genAction := ""
 var exitThread := false
 
 onready var tileMap: TileMap = $TileMap
@@ -232,6 +234,7 @@ class Room:
 func _ready() -> void:
 	mapMutex = Mutex.new()
 	optionsMutex = Mutex.new()
+	exitMutex = Mutex.new()
 	genSemaphore = Semaphore.new()
 	thread = Thread.new()
 	mapCameraUpdated()
@@ -239,17 +242,31 @@ func _ready() -> void:
 	_on_regen_pressed()
 
 
-func _generator_thread_body():
+func _generator_thread_body(_userData):
 	while true:
 		genSemaphore.wait()
 
-		optionsMutex.lock()
+		exitMutex.lock()
 		var shouldExit := exitThread
-		optionsMutex.unlock()
+		exitMutex.unlock()
 
 		if shouldExit:
 			break
-		#  TODO: Do generator stuff here
+		#  Do generator stuff here
+		optionsMutex.lock()
+		var _action := genAction
+		match _action:
+			"cull":
+				cull()
+			"smooth":
+				_smooth()
+			"createRooms":
+				_createRooms()
+			"regen":
+				_regen()
+			"connectRooms":
+				_connectRooms()
+		optionsMutex.unlock()
 
 
 func mapCameraUpdated() -> void:
@@ -268,7 +285,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		item.visible = ! item.visible
 	if Input.is_action_just_pressed("ui_cancel"):
 		get_tree().quit()
-	if working:
+
+	# multi-threading
+	exitMutex.lock()
+	var _working := working
+	exitMutex.unlock()
+
+	if _working:
 		return
 	if Input.is_action_just_pressed("clear"):
 		fillRatio = 0
@@ -277,15 +300,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		mousePointer = get_global_mouse_position()
 		update()
-	if ! working && Input.is_mouse_button_pressed(2):
+	if ! _working && Input.is_mouse_button_pressed(2):
+		exitMutex.lock()
 		working = true
+		exitMutex.unlock()
 		var p = get_global_mouse_position()
 		print("finding group")
 		var result = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
 		highlightTiles = yield(result, "completed")
 		print(highlightTiles.size())
 		update()
+		exitMutex.lock()
 		working = false
+		exitMutex.unlock()
 	if ! makingARoom && Input.is_mouse_button_pressed(1):
 		mouseRoomCenter = get_global_mouse_position()
 		mouseRoomEdge = mouseRoomCenter
@@ -304,9 +331,12 @@ onready var workingUI = $CanvasLayer/Working
 
 
 func _process(_delta):
-	if working != workingUI.visible:
+	# exitMutex.lock()
+	var _working := working  # read-only copy, should not need a mutex
+	# exitMutex.unlock()
+	if _working != workingUI.visible:
 		print('Change working ui')
-		workingUI.visible = working
+		workingUI.visible = _working
 
 
 func _draw():
@@ -430,9 +460,12 @@ func walls_sort_small(a: Room, b: Room) -> bool:
 
 
 func cull(alreadyWorking := false) -> void:
+	exitMutex.lock()
 	if working && ! alreadyWorking:
+		exitMutex.unlock()
 		return
 	working = true
+	exitMutex.unlock()
 	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
@@ -461,7 +494,9 @@ func cull(alreadyWorking := false) -> void:
 			break
 	mapToTileMap()
 	listOfRooms = dirts
+	exitMutex.lock()
 	working = alreadyWorking
+	exitMutex.unlock()
 
 
 func findGroups(type: int) -> Array:
@@ -571,10 +606,13 @@ func doAutoSmoothing():
 			timeAdvance()
 
 
-func connectRooms(alreadyWorking := false):
+func _connectRooms(alreadyWorking := false):
+	exitMutex.lock()
 	if working && ! alreadyWorking:
+		exitMutex.unlock()
 		return
 	working = true
+	exitMutex.unlock()
 	if listOfRooms.size() == 0:
 		yield(cull(true), "completed")
 	else:
@@ -629,10 +667,19 @@ func connectRooms(alreadyWorking := false):
 			if cdetails:
 				c1.connectRoom(cdetails[0], cdetails[1], cdetails[2])
 	update()
+	exitMutex.lock()
 	working = alreadyWorking
+	exitMutex.unlock()
 
 
 func _on_smooth_pressed():
+	optionsMutex.lock()
+	genAction = "smooth"
+	optionsMutex.unlock()
+	genSemaphore.post()
+
+
+func _smooth():
 	timeAdvance()
 	mapToTileMap()
 	updateUI()
@@ -640,6 +687,13 @@ func _on_smooth_pressed():
 
 
 func _on_createRooms_pressed():
+	optionsMutex.lock()
+	genAction = "createRooms"
+	optionsMutex.unlock()
+	genSemaphore.post()
+
+
+func _createRooms():
 	createMapAtTimeZero()
 	makeRooms()
 	doAutoSmoothing()
@@ -649,6 +703,13 @@ func _on_createRooms_pressed():
 
 
 func _on_regen_pressed():
+	optionsMutex.lock()
+	genAction = "regen"
+	optionsMutex.unlock()
+	genSemaphore.post()
+
+
+func _regen():
 	createMapAtTimeZero()
 	doAutoSmoothing()
 	mapToTileMap()
@@ -659,61 +720,92 @@ func _on_regen_pressed():
 
 func _on_autosmooth_toggled(button_pressed):
 	print(button_pressed)
+	optionsMutex.lock()
 	autoSmooth = button_pressed
 	updateUI()
+	optionsMutex.unlock()
 
 
 func _on_Map_H_value_changed(value):
+	optionsMutex.lock()
 	mapHeight = value
+	optionsMutex.unlock()
 
 
 func _on_Map_W_value_changed(value):
+	optionsMutex.lock()
 	mapWidth = value
+	optionsMutex.unlock()
 
 
 func _on_Fill_Ratio_value_changed(value):
+	optionsMutex.lock()
 	fillRatio = clamp(value, 0, 100) as int
 	$"CanvasLayer/UI/vbox/Fill Ratio".value = fillRatio
+	optionsMutex.unlock()
 
 
 func _on_Wall_Limit_value_changed(value):
+	optionsMutex.lock()
 	wallsLimit = value
+	optionsMutex.unlock()
 
 
 func _on_Min_Room_Area_value_changed(value):
+	optionsMutex.lock()
 	minRoomArea = value
+	optionsMutex.unlock()
 
 
 func _on_Min_Wall_value_changed(value):
+	optionsMutex.lock()
 	minWallArea = value
+	optionsMutex.unlock()
 
 
 func _on_Min_Rooms_value_changed(value):
+	optionsMutex.lock()
 	roomCountRange.x = value
+	optionsMutex.unlock()
 
 
 func _on_Max_Rooms_value_changed(value):
+	optionsMutex.lock()
 	roomCountRange.y = value
+	optionsMutex.unlock()
 
 
 func _on_Min_Room_Size_value_changed(value):
+	optionsMutex.lock()
 	roomSizeRange.x = value
+	optionsMutex.unlock()
 
 
 func _on_Max_Room_Size_value_changed(value):
+	optionsMutex.lock()
 	roomSizeRange.y = value
+	optionsMutex.unlock()
 
 
 func _on_cull_pressed():
-	cull()
+	# cull()
+	optionsMutex.lock()
+	genAction = "cull"
+	optionsMutex.unlock()
+	genSemaphore.post()
 
 
 func _on_connectRooms_pressed():
-	connectRooms()
+	optionsMutex.lock()
+	genAction = "connectRooms"
+	optionsMutex.unlock()
+	genSemaphore.post()
 
 
 func _on_seed_value_changed(value):
+	optionsMutex.lock()
 	if value:
 		level_seed = value
 	else:
 		level_seed = ""
+	optionsMutex.unlock()
