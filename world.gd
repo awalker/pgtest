@@ -21,6 +21,9 @@ var rnd := RandomNumberGenerator.new()
 
 var time := 0
 var working := false
+var thread: Thread
+var mapMutex: Mutex
+var genSemaphore: Semaphore
 
 onready var tileMap: TileMap = $TileMap
 onready var mapCamera: Camera2D = $mapCamera
@@ -32,16 +35,16 @@ var makingARoom := false
 var mousePointer := Vector2.ZERO
 var mouseRoomCenter: Vector2
 var mouseRoomEdge: Vector2
-var highlightTiles: TileGroup
+var highlightTiles: Room
 var listOfRooms := []
 
 
-class Room:
+class MouseArea:
 	var center := Vector2.ZERO
 	var distance := 0
 
 
-class TileGroup:
+class Room:
 	var regions := {}
 	var _sz := 0
 	var connected := []
@@ -50,7 +53,7 @@ class TileGroup:
 	var isConnectedToMain := false
 	var isMain := false
 
-	func isConnected(room: TileGroup) -> bool:
+	func isConnected(room: Room) -> bool:
 		if self == room:
 			return false
 		for c in connected:
@@ -60,13 +63,13 @@ class TileGroup:
 
 	func getConnectedRooms(rooms := [self]) -> Array:
 		for rarray in connected:
-			var room: TileGroup = rarray[0]
+			var room: Room = rarray[0]
 			if not rooms.has(room):
 				rooms.append(room)
 				rooms = room.getConnectedRooms(rooms)
 		return rooms
 
-	func connectRoom(room: TileGroup, a: Vector2, b: Vector2) -> void:
+	func connectRoom(room: Room, a: Vector2, b: Vector2) -> void:
 		print("Connect %s to %s" % [self, room])
 		connected.append([room, a, b])
 		room.connected.append([self, a, b])
@@ -150,16 +153,16 @@ class TileGroup:
 
 	func findClosest(scene: SceneTree, rooms: Array):
 		"""Currently, this find a close-ish room.
-		The first round of judges distance by center. Probably should just 
+		The first round of judges distance by center. Probably should just
 		compare all the points everywhere"""
 		findEdges()
 		var closestSq := 999999999999.0
-		var closestRoom: TileGroup
+		var closestRoom: Room
 		var closestVector: Vector2 = Vector2(999999, 999999)
 		var closestSelfVector: Vector2 = center
 		yield(scene, "idle_frame")
 		for i in rooms.size():
-			var room: TileGroup = rooms[i]
+			var room: Room = rooms[i]
 			room.findEdges()
 			if room == self:
 				continue
@@ -302,7 +305,7 @@ func _draw():
 		highlightTiles.draw(Color("#00FF00" if working else "#0000FF"), tileSize, self)
 	if listOfRooms:
 		for i in listOfRooms.size():
-			var r: TileGroup = listOfRooms[i]
+			var r: Room = listOfRooms[i]
 			r.drawConnections(Color.yellow, tileSize, self)
 
 
@@ -322,7 +325,7 @@ func makeRooms() -> void:
 		for room in rooms:
 			closest = min(closest, room.center.distance_squared_to(c))
 		if closest > maxRoomSize * maxRoomSize * 0.75:
-			var r := Room.new()
+			var r := MouseArea.new()
 			r.center = c
 			r.distance = d
 			rooms.append(r)
@@ -333,7 +336,7 @@ func makeRooms() -> void:
 
 
 func makeARoom(center: Vector2, edge: Vector2) -> void:
-	# Create Our Room
+	# Create Our MouseArea
 	var maxDistSq := center.distance_squared_to(edge)
 	var maxDist := center.distance_to(edge)
 	var cx := round(center.x) as int
@@ -404,7 +407,7 @@ func mapToTileMap() -> void:
 	update()
 
 
-func walls_sort_small(a: TileGroup, b: TileGroup) -> bool:
+func walls_sort_small(a: Room, b: Room) -> bool:
 	return a.size() < b.size()
 
 
@@ -457,12 +460,12 @@ func findGroups(type: int) -> Array:
 						inGroup = true
 						break
 				if ! inGroup:
-					var tiles: TileGroup = yield(findTileGroup(x, y, type), "completed")
+					var tiles: Room = yield(findTileGroup(x, y, type), "completed")
 					groups.append(tiles)
 	return groups
 
 
-func queueIfOk(queue: Array, group: TileGroup, x: int, y: int) -> void:
+func queueIfOk(queue: Array, group: Room, x: int, y: int) -> void:
 	var v := Vector2(x, y)
 	if x >= 0 && x < mapWidth && y >= 0 && y < mapHeight && ! queue.has(v) && ! group.isIn(x, y):
 		queue.append(v)
@@ -472,7 +475,7 @@ var runlimit = 250
 
 
 func findTileGroup(x: int, y: int, type: int):
-	var data := [TileGroup.new(), [Vector2(x, y)]]
+	var data := [Room.new(), [Vector2(x, y)]]
 	var start := OS.get_ticks_msec()
 	var elapsed := 0.0
 	var i := 0
@@ -494,7 +497,7 @@ func findTileGroup(x: int, y: int, type: int):
 
 
 func findRestOfGroup(data: Array, type: int) -> Array:
-	var group: TileGroup = data[0]
+	var group: Room = data[0]
 	var queue: Array = data[1]
 
 	var mine: Vector2 = queue.pop_front()
@@ -558,14 +561,14 @@ func connectRooms(alreadyWorking := false):
 		yield(cull(true), "completed")
 	else:
 		yield(get_tree(), "idle_frame")
-	var mainRoom: TileGroup = listOfRooms[listOfRooms.size() - 1]
+	var mainRoom: Room = listOfRooms[listOfRooms.size() - 1]
 	mainRoom.isMain = true
 	mainRoom.isConnectedToMain = true
 
 	print("found %d rooms" % listOfRooms.size())
 	if listOfRooms.size() > 1:
 		for roomIndex in range(0, listOfRooms.size() - 1):
-			var room: TileGroup = listOfRooms[roomIndex]
+			var room: Room = listOfRooms[roomIndex]
 			var details = yield(room.findClosest(get_tree(), listOfRooms), "completed")
 			room.connectRoom(details[0], details[1], details[2])
 
@@ -590,7 +593,7 @@ func connectRooms(alreadyWorking := false):
 			# multiple groups. join the closest rooms
 			var g1: Array = groups[0]
 			var cgroup: Array = groups[1]
-			var c1: TileGroup
+			var c1: Room
 			var d = 99999999999999
 			var cdetails: Array
 			for r1 in g1:
