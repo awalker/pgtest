@@ -155,7 +155,7 @@ class Room:
 					return true
 		return false
 
-	func findClosest(scene: SceneTree, rooms: Array):
+	func findClosest(rooms: Array):
 		"""Currently, this find a close-ish room.
 		The first round of judges distance by center. Probably should just
 		compare all the points everywhere"""
@@ -236,13 +236,17 @@ func _ready() -> void:
 	genSemaphore = Semaphore.new()
 	thread = Thread.new()
 	mapCameraUpdated()
-	thread.start(self, "_generator_thread_body")
+	var ok := thread.start(self, "_generator_thread_body")
+	if ok != OK:
+		print("Thread not started")
 	_on_regen_pressed()
 
 
 func _generator_thread_body(_userData):
 	while true:
-		genSemaphore.wait()
+		var ok := genSemaphore.wait()
+		if ok != OK:
+			print("Could not wait on semaphore")
 
 		exitMutex.lock()
 		var shouldExit := exitThread
@@ -268,6 +272,7 @@ func _generator_thread_body(_userData):
 
 
 func mapCameraUpdated() -> void:
+	optionsMutex.lock()
 	var w = (mapWidth) * tileSize
 	var h = (mapHeight) * tileSize
 	mapCamera.position = Vector2(w / 2, h / 2)
@@ -275,6 +280,7 @@ func mapCameraUpdated() -> void:
 	var zy = h / (get_viewport_rect().size.y)
 	var z = max(zx, zy)
 	mapCamera.zoom = Vector2(z, z)
+	optionsMutex.unlock()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -319,7 +325,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		mouseRoomEdge = get_global_mouse_position()
 		if ! Input.is_mouse_button_pressed(1):
 			makingARoom = false
-			makeARoom(mouseRoomCenter / tileSize, mouseRoomEdge / tileSize)
+			makeAMouseArea(mouseRoomCenter / tileSize, mouseRoomEdge / tileSize)
 			mapToTileMap()
 		update()
 
@@ -343,6 +349,7 @@ func _draw():
 			radius = mouseRoomCenter.distance_to(mouseRoomEdge)
 		draw_circle(mouseRoomCenter, radius, Color.red)
 	draw_circle(mousePointer, 15.0, Color.green)
+	# TODO: Either get mutexes or make copies or rooms, highlights, etc
 	if rooms:
 		for r in rooms:
 			draw_circle(Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow)
@@ -374,19 +381,20 @@ func makeRooms() -> void:
 			r.center = c
 			r.distance = d
 			rooms.append(r)
-			makeARoom(c, Vector2(x - d, y))
+			makeAMouseArea(c, Vector2(x - d, y))
 			i += 1
 		else:
 			energy -= 1
 
 
-func makeARoom(center: Vector2, edge: Vector2) -> void:
+func makeAMouseArea(center: Vector2, edge: Vector2) -> void:
 	# Create Our MouseArea
 	var maxDistSq := center.distance_squared_to(edge)
 	var maxDist := center.distance_to(edge)
 	var cx := round(center.x) as int
 	var cy := round(center.y) as int
 	var tl := Vector2(cx - maxDist, cy - maxDist)
+	mapMutex.lock()
 	for _y in range(tl.y, tl.y + maxDist * 2):
 		for _x in range(tl.x, tl.x + maxDist * 2):
 			var x: int = clamp(_x, 0, mapWidth - 1) as int
@@ -399,9 +407,11 @@ func makeARoom(center: Vector2, edge: Vector2) -> void:
 			if rnd.randf() < percent:
 				tile = Tiles.DIRT
 			map[x][y] = tile
+	mapMutex.unlock()
 
 
 func updateUI() -> void:
+	optionsMutex.lock()
 	$CanvasLayer/h/Time.text = "Time: " + str(time)
 	$"CanvasLayer/UI/vbox/Fill Ratio".value = fillRatio
 	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
@@ -416,6 +426,7 @@ func updateUI() -> void:
 	$"CanvasLayer/UI/vbox/Min Room Size".value = roomSizeRange.x as int
 	$"CanvasLayer/UI/vbox/Max Room Size".value = roomSizeRange.y as int
 	$CanvasLayer/UI/vbox/seed.value = level_seed
+	optionsMutex.unlock()
 
 
 func timeAdvance() -> void:
@@ -432,7 +443,7 @@ func timeAdvance() -> void:
 				# iama wall, bro-ham
 				if walls < wallsLimit:
 					map[x][y] = Tiles.DIRT
-	updateUI()
+	call_deferred("updateUI")
 
 
 func countWallsInNeighborhood(x: int, y: int) -> int:
@@ -446,9 +457,11 @@ func countWallsInNeighborhood(x: int, y: int) -> int:
 
 
 func mapToTileMap() -> void:
+	mapMutex.lock()
 	for x in range(0, mapWidth):
 		for y in range(0, mapHeight):
 			tileMap.set_cell(x, y, map[x][y])
+	mapMutex.unlock()
 	update()
 
 
@@ -467,6 +480,7 @@ func cull(alreadyWorking := false) -> void:
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
 	var i := 0
+	mapMutex.lock()
 	while i < walls.size():
 		if walls[0].size() < minWallArea:
 			print(walls[0].size())
@@ -475,10 +489,12 @@ func cull(alreadyWorking := false) -> void:
 			walls.remove(0)
 		else:
 			break
+	mapMutex.unlock()
 	var dirts: Array = findGroups(Tiles.DIRT)
 	print("Found %d dirt groups" % dirts.size())
 	dirts.sort_custom(self, "walls_sort_small")
 	i = 0
+	mapMutex.lock()
 	while i < dirts.size():
 		if dirts[0].size() < minRoomArea:
 			print(dirts[0].size())
@@ -487,8 +503,9 @@ func cull(alreadyWorking := false) -> void:
 			dirts.remove(0)
 		else:
 			break
-	call_deferred("mapToTileMap")
 	listOfRooms = dirts
+	mapMutex.unlock()
+	call_deferred("mapToTileMap")
 	exitMutex.lock()
 	working = alreadyWorking
 	exitMutex.unlock()
@@ -564,6 +581,7 @@ func findRestOfGroup(data: Array, type: int) -> Array:
 
 
 func createMapAtTimeZero() -> void:
+	mapMutex.lock()
 	listOfRooms = []
 	highlightTiles = null
 	if level_seed:
@@ -588,7 +606,8 @@ func createMapAtTimeZero() -> void:
 				else:
 					tile = Tiles.WALL
 			tmap[y] = tile
-	updateUI()
+	mapMutex.unlock()
+	call_deferred("updateUI")
 	# timeAdvance()
 
 
@@ -615,7 +634,7 @@ func _connectRooms(alreadyWorking := false):
 	if listOfRooms.size() > 1:
 		for roomIndex in range(0, listOfRooms.size() - 1):
 			var room: Room = listOfRooms[roomIndex]
-			var details = room.findClosest(get_tree(), listOfRooms)
+			var details = room.findClosest(listOfRooms)
 			room.connectRoom(details[0], details[1], details[2])
 
 	# Make sure all rooms are connected
@@ -638,7 +657,7 @@ func _connectRooms(alreadyWorking := false):
 		else:
 			# multiple groups. join the closest rooms
 			var g1: Array = groups[0]
-			var cgroup: Array = groups[1]
+			# var cgroup: Array = groups[1]
 			var c1: Room
 			var d = 99999999999999
 			var cdetails: Array
@@ -652,7 +671,7 @@ func _connectRooms(alreadyWorking := false):
 							cdetails = details
 							d = tmp
 							c1 = r1
-							cgroup = g2
+							# cgroup = g2
 			if cdetails:
 				c1.connectRoom(cdetails[0], cdetails[1], cdetails[2])
 	update()
@@ -661,17 +680,34 @@ func _connectRooms(alreadyWorking := false):
 	exitMutex.unlock()
 
 
+# Thread must be disposed (or "joined"), for portability.
+func _exit_tree():
+	# Set exit condition to true.
+	exitMutex.lock()
+	exitThread = true  # Protect with Mutex.
+	exitMutex.unlock()
+
+	# Unblock by posting.
+	genAction = "exit"
+	var _ok := genSemaphore.post()
+
+	# Wait until it exits.
+	thread.wait_to_finish()
+
+
 func _on_smooth_pressed():
 	optionsMutex.lock()
 	genAction = "smooth"
 	optionsMutex.unlock()
-	genSemaphore.post()
+	var ok := genSemaphore.post()
+	if ok != OK:
+		print("Semaphore was busy")
 
 
 func _smooth():
 	timeAdvance()
 	call_deferred("mapToTileMap")
-	updateUI()
+	call_deferred("updateUI")
 	call_deferred("update")
 
 
@@ -679,15 +715,18 @@ func _on_createRooms_pressed():
 	optionsMutex.lock()
 	genAction = "createRooms"
 	optionsMutex.unlock()
-	genSemaphore.post()
+	var ok := genSemaphore.post()
+	if ok != OK:
+		print("Semaphore was busy")
 
 
 func _createRooms():
 	createMapAtTimeZero()
 	makeRooms()
+	doAutoSmoothing()
 	call_deferred("mapToTileMap")
 	call_deferred("mapCameraUpdated")
-	updateUI()
+	call_deferred("updateUI")
 	call_deferred("update")
 
 
@@ -695,7 +734,9 @@ func _on_regen_pressed():
 	optionsMutex.lock()
 	genAction = "regen"
 	optionsMutex.unlock()
-	genSemaphore.post()
+	var ok := genSemaphore.post()
+	if ok != OK:
+		print("Semaphore was busy")
 
 
 func _regen():
@@ -703,7 +744,7 @@ func _regen():
 	doAutoSmoothing()
 	call_deferred("mapToTileMap")
 	call_deferred("mapCameraUpdated")
-	updateUI()
+	call_deferred("updateUI")
 	call_deferred("update")
 
 
@@ -711,7 +752,7 @@ func _on_autosmooth_toggled(button_pressed):
 	print(button_pressed)
 	optionsMutex.lock()
 	autoSmooth = button_pressed
-	updateUI()
+	call_deferred("updateUI")
 	optionsMutex.unlock()
 
 
@@ -781,14 +822,18 @@ func _on_cull_pressed():
 	optionsMutex.lock()
 	genAction = "cull"
 	optionsMutex.unlock()
-	genSemaphore.post()
+	var ok := genSemaphore.post()
+	if ok != OK:
+		print("Semaphore was busy")
 
 
 func _on_connectRooms_pressed():
 	optionsMutex.lock()
 	genAction = "connectRooms"
 	optionsMutex.unlock()
-	genSemaphore.post()
+	var ok := genSemaphore.post()
+	if ok != OK:
+		print("Semaphore was busy")
 
 
 func _on_seed_value_changed(value):
