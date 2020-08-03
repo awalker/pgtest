@@ -157,14 +157,13 @@ class Room:
 
 	func findClosest(scene: SceneTree, rooms: Array):
 		"""Currently, this find a close-ish room.
-        The first round of judges distance by center. Probably should just
-        compare all the points everywhere"""
+		The first round of judges distance by center. Probably should just
+		compare all the points everywhere"""
 		findEdges()
 		var closestSq := 999999999999.0
 		var closestRoom: Room
 		var closestVector: Vector2 = Vector2(999999, 999999)
 		var closestSelfVector: Vector2 = center
-		yield(scene, "idle_frame")
 		for i in rooms.size():
 			var room: Room = rooms[i]
 			room.findEdges()
@@ -173,7 +172,6 @@ class Room:
 			if isConnected(room):
 				continue
 			for sv in edges:
-				yield(scene, "idle_frame")
 				for v in room.edges:
 					var tmp: float = sv.distance_squared_to(v)
 					if tmp <= closestSq:
@@ -238,7 +236,7 @@ func _ready() -> void:
 	genSemaphore = Semaphore.new()
 	thread = Thread.new()
 	mapCameraUpdated()
-	thread.start(self, "_generator_thread_body()")
+	thread.start(self, "_generator_thread_body")
 	_on_regen_pressed()
 
 
@@ -306,8 +304,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		exitMutex.unlock()
 		var p = get_global_mouse_position()
 		print("finding group")
-		var result = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
-		highlightTiles = yield(result, "completed")
+		highlightTiles = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
 		print(highlightTiles.size())
 		update()
 		exitMutex.lock()
@@ -466,12 +463,11 @@ func cull(alreadyWorking := false) -> void:
 		return
 	working = true
 	exitMutex.unlock()
-	var walls: Array = yield(findGroups(Tiles.WALL), "completed")
+	var walls: Array = findGroups(Tiles.WALL)
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
 	var i := 0
 	while i < walls.size():
-		yield(get_tree(), "idle_frame")
 		if walls[0].size() < minWallArea:
 			print(walls[0].size())
 			# make all the walls in this tile group into dirt
@@ -479,12 +475,11 @@ func cull(alreadyWorking := false) -> void:
 			walls.remove(0)
 		else:
 			break
-	var dirts: Array = yield(findGroups(Tiles.DIRT), "completed")
+	var dirts: Array = findGroups(Tiles.DIRT)
 	print("Found %d dirt groups" % dirts.size())
 	dirts.sort_custom(self, "walls_sort_small")
 	i = 0
 	while i < dirts.size():
-		yield(get_tree(), "idle_frame")
 		if dirts[0].size() < minRoomArea:
 			print(dirts[0].size())
 			# make all the walls in this tile group into dirt
@@ -492,7 +487,7 @@ func cull(alreadyWorking := false) -> void:
 			dirts.remove(0)
 		else:
 			break
-	mapToTileMap()
+	call_deferred("mapToTileMap")
 	listOfRooms = dirts
 	exitMutex.lock()
 	working = alreadyWorking
@@ -502,7 +497,6 @@ func cull(alreadyWorking := false) -> void:
 func findGroups(type: int) -> Array:
 	var groups := []
 	for y in range(mapHeight):
-		yield(get_tree(), "idle_frame")
 		for x in range(mapWidth):
 			var tile: int = map[x][y]
 			if tile == type:
@@ -513,7 +507,7 @@ func findGroups(type: int) -> Array:
 						inGroup = true
 						break
 				if ! inGroup:
-					var tiles: Room = yield(findTileGroup(x, y, type), "completed")
+					var tiles: Room = findTileGroup(x, y, type)
 					groups.append(tiles)
 	return groups
 
@@ -532,7 +526,6 @@ func findTileGroup(x: int, y: int, type: int):
 	var start := OS.get_ticks_msec()
 	var elapsed := 0.0
 	var i := 0
-	yield(get_tree(), "idle_frame")
 	while data[1].size():
 		data = findRestOfGroup(data, type)
 		i += 1
@@ -542,7 +535,6 @@ func findTileGroup(x: int, y: int, type: int):
 			elapsed += OS.get_ticks_msec() - start
 			highlightTiles = data[0]
 			update()
-			yield(get_tree(), "idle_frame")
 			start = OS.get_ticks_msec()
 	print("%f sec at run limit %d" % [elapsed / 1000.0, runlimit])
 	highlightTiles = data[0].normalize()
@@ -614,9 +606,7 @@ func _connectRooms(alreadyWorking := false):
 	working = true
 	exitMutex.unlock()
 	if listOfRooms.size() == 0:
-		yield(cull(true), "completed")
-	else:
-		yield(get_tree(), "idle_frame")
+		cull(true)
 	var mainRoom: Room = listOfRooms[listOfRooms.size() - 1]
 	mainRoom.isMain = true
 	mainRoom.isConnectedToMain = true
@@ -625,7 +615,7 @@ func _connectRooms(alreadyWorking := false):
 	if listOfRooms.size() > 1:
 		for roomIndex in range(0, listOfRooms.size() - 1):
 			var room: Room = listOfRooms[roomIndex]
-			var details = yield(room.findClosest(get_tree(), listOfRooms), "completed")
+			var details = room.findClosest(get_tree(), listOfRooms)
 			room.connectRoom(details[0], details[1], details[2])
 
 	# Make sure all rooms are connected
@@ -653,11 +643,10 @@ func _connectRooms(alreadyWorking := false):
 			var d = 99999999999999
 			var cdetails: Array
 			for r1 in g1:
-				yield(get_tree(), "idle_frame")
 				for g2i in groups.size() - 1:
 					var g2: Array = groups[g2i + 1]
 					for r2 in g2:
-						var details: Array = yield(r1.findClosest(get_tree(), g2), "completed")
+						var details: Array = r1.findClosest(get_tree(), g2)
 						var tmp: float = details[1].distance_squared_to(details[2])
 						if tmp < d:
 							cdetails = details
@@ -681,9 +670,9 @@ func _on_smooth_pressed():
 
 func _smooth():
 	timeAdvance()
-	mapToTileMap()
+	call_deferred("mapToTileMap")
 	updateUI()
-	update()
+	call_deferred("update")
 
 
 func _on_createRooms_pressed():
@@ -696,10 +685,10 @@ func _on_createRooms_pressed():
 func _createRooms():
 	createMapAtTimeZero()
 	makeRooms()
-	doAutoSmoothing()
-	mapToTileMap()
+	call_deferred("mapToTileMap")
+	call_deferred("mapCameraUpdated")
 	updateUI()
-	update()
+	call_deferred("update")
 
 
 func _on_regen_pressed():
@@ -712,10 +701,10 @@ func _on_regen_pressed():
 func _regen():
 	createMapAtTimeZero()
 	doAutoSmoothing()
-	mapToTileMap()
-	mapCameraUpdated()
+	call_deferred("mapToTileMap")
+	call_deferred("mapCameraUpdated")
 	updateUI()
-	update()
+	call_deferred("update")
 
 
 func _on_autosmooth_toggled(button_pressed):
