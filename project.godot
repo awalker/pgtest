@@ -9,6 +9,11 @@
 config_version=4
 
 _global_script_classes=[ {
+"base": "Node",
+"class": "CaveGenerator",
+"language": "GDScript",
+"path": "res://cave_generator.gd"
+}, {
 "base": "Node2D",
 "class": "CaveWorld",
 "language": "GDScript",
@@ -25,6 +30,7 @@ _global_script_classes=[ {
 "path": "res://text_field.gd"
 } ]
 _global_script_class_icons={
+"CaveGenerator": "",
 "CaveWorld": "",
 "FormField": "",
 "TextField": ""
