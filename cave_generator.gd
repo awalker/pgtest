@@ -13,6 +13,12 @@ export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
 
+export (bool) var useRooms := true
+export (bool) var useProbRooms := true
+export (bool) var useCA := true
+export (bool) var doCulling := true
+export (bool) var doConnections := true
+
 var autoSmooth := true
 
 var rooms := []
@@ -593,6 +599,7 @@ func createMapAtTimeZero() -> void:
 	rooms = []
 	time = 0
 	map.resize(mapWidth)
+	var _fillRatio := fillRatio if useCA else 0
 	for x in range(0, mapWidth):
 		var tmap := []
 		tmap.resize(mapHeight)
@@ -601,14 +608,12 @@ func createMapAtTimeZero() -> void:
 			var tile: int = Tiles.WALL
 			if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
 				var r = rnd.randi_range(0, 100)
-				if r < fillRatio:
+				if r < _fillRatio:
 					tile = Tiles.DIRT
 				else:
 					tile = Tiles.WALL
 			tmap[y] = tile
 	mapMutex.unlock()
-	call_deferred("updateUI")
-	# timeAdvance()
 
 
 func doAutoSmoothing():
@@ -728,4 +733,10 @@ func _createRooms():
 
 func _regen():
 	createMapAtTimeZero()
+	if useRooms:
+		makeRooms()
 	doAutoSmoothing()
+	if doCulling:
+		_cull()
+	if doConnections:
+		_connectRooms()

@@ -38,3 +38,7 @@ func set_disabled(b: bool):
 func _on_txt_focus_exited():
 	if not Engine.editor_hint:
 		emit_signal("value_changed", self.value)
+
+
+func _on_txt_focus_entered():
+	$txt.select()

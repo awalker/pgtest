@@ -43,11 +43,12 @@ func _ready() -> void:
 func setUIDisabled(b: bool):
 	var btns := [
 		$CanvasLayer/UI/vbox/buttonBox/regen,
-		$CanvasLayer/UI/vbox/buttonBox/createRooms,
-		$CanvasLayer/UI/vbox/buttonBox/smooth,
+		$CanvasLayer/UI/vbox/buttonBox/useRooms,
+		$CanvasLayer/UI/vbox/buttonBox/useProbRooms,
+		$CanvasLayer/UI/vbox/buttonBox/useCA,
+		$CanvasLayer/UI/vbox/buttonBox/doCullings,
+		$CanvasLayer/UI/vbox/buttonBox/doConnections,
 		$CanvasLayer/UI/vbox/buttonBox/autosmooth,
-		$CanvasLayer/UI/vbox/buttonBox/cull,
-		$CanvasLayer/UI/vbox/buttonBox/connectRooms
 	]
 	var forms := [
 		$CanvasLayer/UI/vbox/seed,
@@ -90,7 +91,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _working:
 		return
 	if event is InputEventMouseMotion:
-		mousePointer = get_global_mouse_position()
+		generator.mousePointer = get_global_mouse_position()
 		update()
 	if ! _working && Input.is_mouse_button_pressed(2):
 		var p = get_global_mouse_position()
@@ -133,6 +134,16 @@ func updateUI() -> void:
 	$"CanvasLayer/UI/vbox/Fill Ratio".value = generator.fillRatio
 	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
 	asBtn.pressed = generator.autoSmooth
+	var btn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/useRooms
+	btn.pressed = generator.useRooms
+	btn = $CanvasLayer/UI/vbox/buttonBox/useProbRooms
+	btn.pressed = generator.useProbRooms
+	btn = $CanvasLayer/UI/vbox/buttonBox/useCA
+	btn.pressed = generator.useCA
+	btn = $CanvasLayer/UI/vbox/buttonBox/doCullings
+	btn.pressed = generator.doCulling
+	btn = $CanvasLayer/UI/vbox/buttonBox/doConnections
+	btn.pressed = generator.doConnections
 	$"CanvasLayer/UI/vbox/Map H".value = generator.mapHeight
 	$"CanvasLayer/UI/vbox/Map W".value = generator.mapWidth
 	$"CanvasLayer/UI/vbox/Wall Limit".value = generator.wallsLimit
@@ -166,16 +177,6 @@ func updateGeneratorOptions():
 	generator.roomCountRange = roomCountRange
 	generator.roomSizeRange = roomSizeRange
 	generator.level_seed = level_seed
-
-
-func _on_smooth_pressed():
-	updateGeneratorOptions()
-	generator.smooth()
-
-
-func _on_createRooms_pressed():
-	updateGeneratorOptions()
-	generator.createRooms()
 
 
 func _on_regen_pressed():
@@ -228,14 +229,6 @@ func _on_Max_Room_Size_value_changed(value):
 	roomSizeRange.y = value
 
 
-func _on_cull_pressed():
-	generator.cull()
-
-
-func _on_connectRooms_pressed():
-	generator.connectRooms()
-
-
 func _on_seed_value_changed(value):
 	if value:
 		level_seed = value
@@ -249,6 +242,7 @@ func _on_generator_completed():
 	generator.mapToTileMap(tileMap)
 	update()
 	updateUI()
+	mapCameraUpdated()
 
 
 func _on_generator_progress(progress):
@@ -264,3 +258,23 @@ func _on_generator_update_debug_canvas():
 
 func _on_generator_update_ui():
 	updateUI()
+
+
+func _on_useRooms_toggled(button_pressed):
+	generator.useRooms = button_pressed
+
+
+func _on_useProbRooms_toggled(button_pressed):
+	generator.useProbRooms = button_pressed
+
+
+func _on_useCA_toggled(button_pressed):
+	generator.useCA = button_pressed
+
+
+func _on_doCullings_toggled(button_pressed):
+	generator.doCulling = button_pressed
+
+
+func _on_doConnections_toggled(button_pressed):
+	generator.doConnections = button_pressed
