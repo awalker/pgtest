@@ -470,7 +470,8 @@ func walls_sort_small(a: Room, b: Room) -> bool:
 
 
 func _cull() -> void:
-	var walls: Array = findGroups(Tiles.WALL)
+	var total = mapWidth * mapHeight * 2
+	var walls: Array = findGroups(Tiles.WALL, 0, total)
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
 	var i := 0
@@ -484,7 +485,7 @@ func _cull() -> void:
 		else:
 			break
 	mapMutex.unlock()
-	var dirts: Array = findGroups(Tiles.DIRT)
+	var dirts: Array = findGroups(Tiles.DIRT, mapWidth * mapHeight, total)
 	print("Found %d dirt groups" % dirts.size())
 	dirts.sort_custom(self, "walls_sort_small")
 	i = 0
@@ -503,10 +504,12 @@ func _cull() -> void:
 	call_deferred("update")
 
 
-func findGroups(type: int) -> Array:
+func findGroups(type: int, start: int, total: int) -> Array:
 	var groups := []
 	for y in range(mapHeight):
+		_sendProgress(start, total)
 		for x in range(mapWidth):
+			start += 1
 			var tile: int = map[x][y]
 			if tile == type:
 				# var v := Vector2(x,y)
@@ -646,6 +649,7 @@ func _connectRooms(forceConnect := false):
 			% [groupDisconnected.size(), groupMain.size(), forceConnect]
 		)
 	)
+	_sendProgress(groupMain.size(), listOfRooms.size())
 	if groupDisconnected.size() == 0:
 		# only one group, everything is connected
 		mapMutex.unlock()

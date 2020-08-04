@@ -279,20 +279,32 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-margin_left = -33.0
-margin_top = -14.0
-margin_right = 33.0
-margin_bottom = 14.0
+margin_left = -94.0
+margin_top = -16.0
+margin_right = 94.0
+margin_bottom = 35.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Label" type="Label" parent="CanvasLayer/Working"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Working"]
 margin_left = 7.0
 margin_top = 7.0
-margin_right = 59.0
-margin_bottom = 21.0
+margin_right = 181.0
+margin_bottom = 44.0
+
+[node name="Label" type="Label" parent="CanvasLayer/Working/VBoxContainer"]
+margin_right = 174.0
+margin_bottom = 14.0
 text = "Working"
+align = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="CanvasLayer/Working/VBoxContainer"]
+margin_top = 18.0
+margin_right = 174.0
+margin_bottom = 37.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="generator" type="Node" parent="."]
 script = ExtResource( 7 )

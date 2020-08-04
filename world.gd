@@ -25,6 +25,7 @@ var working := false
 onready var tileMap: TileMap = $TileMap
 onready var mapCamera: Camera2D = $mapCamera
 onready var generator = $generator
+onready var progressBar = $CanvasLayer/Working/VBoxContainer/ProgressBar
 
 var makingARoom := false
 var mousePointer := Vector2.ZERO
@@ -114,10 +115,29 @@ func updateUI() -> void:
 	$"CanvasLayer/UI/vbox/Min Room Size".value = generator.roomSizeRange.x as int
 	$"CanvasLayer/UI/vbox/Max Room Size".value = generator.roomSizeRange.y as int
 	$CanvasLayer/UI/vbox/seed.value = generator.level_seed
+	fillRatio = generator.fillRatio
+	autoSmooth = generator.autoSmooth
+	mapHeight = generator.mapHeight
+	mapWidth = generator.mapWidth
+	wallsLimit = generator.wallsLimit
+	minWallArea = generator.minWallArea
+	minRoomArea = generator.minRoomArea
+	roomCountRange = generator.roomCountRange
+	roomSizeRange = generator.roomSizeRange
+	level_seed = generator.level_seed
 
 
 func updateGeneratorOptions():
-	pass
+	generator.fillRatio = fillRatio
+	generator.autoSmooth = autoSmooth
+	generator.mapHeight = mapHeight
+	generator.mapWidth = mapWidth
+	generator.wallsLimit = wallsLimit
+	generator.minWallArea = minWallArea
+	generator.minRoomArea = minRoomArea
+	generator.roomCountRange = roomCountRange
+	generator.roomSizeRange = roomSizeRange
+	generator.level_seed = level_seed
 
 
 func _on_smooth_pressed():
@@ -202,8 +222,9 @@ func _on_generator_completed():
 	updateUI()
 
 
-func _on_generator_progress(_progress):
+func _on_generator_progress(progress):
 	working = true
+	progressBar.value = progress
 
 
 func _on_generator_update_debug_canvas():
