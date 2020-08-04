@@ -9,6 +9,11 @@ Creates a cave system from cellular automata and/or blasting rooms into the wall
 * Disable relevant UI elements during "work"
 * Move generator parameters to a separate object that the generator can copy during work for greater thread safety
 * Move Generator out of the world script to a separate object, for greater reusability
+* Place entrance and exit (possible support for screen side entrance and exit)
+* Place decorative items
+* Place treasures
+* Place enemies
+* Add mode to play test to get a sense of scale for the maps
 * Possibly convert the generator to C# for speed boost.
 
 # Possible targets for more threads
