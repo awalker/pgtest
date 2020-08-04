@@ -7,8 +7,6 @@ Creates a cave system from cellular automata and/or blasting rooms into the wall
 
 * Actually carve out the tunnels
 * Disable relevant UI elements during "work"
-* Move generator parameters to a separate object that the generator can copy during work for greater thread safety
-* Move Generator out of the world script to a separate object, for greater reusability
 * Place entrance and exit (possible support for screen side entrance and exit)
 * Place decorative items
 * Place treasures
