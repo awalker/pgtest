@@ -42,6 +42,8 @@ var listOfRooms := []
 
 signal completed
 signal progress(progress)
+signal update_debug_canvas
+signal update_ui
 
 
 class MouseArea:
@@ -166,8 +168,8 @@ class Room:
 
 	func findClosest(rooms: Array):
 		"""Currently, this find a close-ish room.
-    The first round of judges distance by center. Probably should just
-    compare all the points everywhere"""
+	The first round of judges distance by center. Probably should just
+	compare all the points everywhere"""
 		findEdges()
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -274,7 +276,7 @@ func _generator_thread_body(_userData):
 		var _action := genAction
 		match _action:
 			"cull":
-				cull()
+				_cull()
 			"smooth":
 				_smooth()
 			"createRooms":
@@ -287,12 +289,40 @@ func _generator_thread_body(_userData):
 		_sendCompeleted()
 
 
+func _doGenAction(v: String):
+	optionsMutex.lock()
+	genAction = v
+	optionsMutex.unlock()
+	if genSemaphore.post() != OK:
+		print("Could not post semaphore")
+
+
+func cull():
+	_doGenAction("cull")
+
+
+func smooth():
+	_doGenAction("smooth")
+
+
+func createRooms():
+	_doGenAction("createRooms")
+
+
+func regen():
+	_doGenAction("regen")
+
+
+func connectRooms():
+	_doGenAction("connectRooms")
+
+
 func _sendProgress(at: float, total: float):
-	emit_signal("progress", at * 100.0 / total)
+	call_deferred("emit_signal", "progress", at * 100.0 / total)
 
 
 func _sendCompeleted():
-	emit_signal("completed")
+	call_deferred("emit_signal", "completed")
 
 
 func clear() -> void:
@@ -312,7 +342,7 @@ func mouseHighlight(p: Vector2):
 	exitMutex.unlock()
 
 
-func _draw(node: Node2D):
+func drawDebugCanvas(node: Node2D):
 	if makingARoom:
 		var radius := 5.0
 		if mouseRoomEdge:
@@ -390,11 +420,11 @@ func makeAMouseArea(center: Vector2, edge: Vector2) -> void:
 
 
 func updateUI():
-	pass
+	call_deferred("emit_signal", "update_ui")
 
 
 func update():
-	pass
+	call_deferred("emit_signal", "update_debug_canvas")
 
 
 func timeAdvance() -> void:
@@ -433,14 +463,13 @@ func mapToTileMap(tileMap: TileMap) -> void:
 		for y in range(0, mapHeight):
 			tileMap.set_cell(x, y, map[x][y])
 	mapMutex.unlock()
-	update()
 
 
 func walls_sort_small(a: Room, b: Room) -> bool:
 	return a.size() < b.size()
 
 
-func cull() -> void:
+func _cull() -> void:
 	var walls: Array = findGroups(Tiles.WALL)
 	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
