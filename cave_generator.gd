@@ -15,7 +15,7 @@ export (Vector2) var roomSizeRange := Vector2(15, 50)
 
 export (bool) var useRooms := true
 export (bool) var useProbRooms := true
-export (bool) var useCA := true
+export (bool) var useRandomFill := true
 export (bool) var doCulling := true
 export (bool) var doConnections := true
 
@@ -599,7 +599,7 @@ func createMapAtTimeZero() -> void:
 	rooms = []
 	time = 0
 	map.resize(mapWidth)
-	var _fillRatio := fillRatio if useCA else 0
+	var _fillRatio := fillRatio if useRandomFill else 0
 	for x in range(0, mapWidth):
 		var tmap := []
 		tmap.resize(mapHeight)

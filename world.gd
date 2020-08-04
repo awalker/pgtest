@@ -45,7 +45,7 @@ func setUIDisabled(b: bool):
 		$CanvasLayer/UI/vbox/buttonBox/regen,
 		$CanvasLayer/UI/vbox/buttonBox/useRooms,
 		$CanvasLayer/UI/vbox/buttonBox/useProbRooms,
-		$CanvasLayer/UI/vbox/buttonBox/useCA,
+		$CanvasLayer/UI/vbox/buttonBox/useRandomFill,
 		$CanvasLayer/UI/vbox/buttonBox/doCullings,
 		$CanvasLayer/UI/vbox/buttonBox/doConnections,
 		$CanvasLayer/UI/vbox/buttonBox/autosmooth,
@@ -138,12 +138,21 @@ func updateUI() -> void:
 	btn.pressed = generator.useRooms
 	btn = $CanvasLayer/UI/vbox/buttonBox/useProbRooms
 	btn.pressed = generator.useProbRooms
-	btn = $CanvasLayer/UI/vbox/buttonBox/useCA
-	btn.pressed = generator.useCA
+	btn = $CanvasLayer/UI/vbox/buttonBox/useRandomFill
+	btn.pressed = generator.useRandomFill
 	btn = $CanvasLayer/UI/vbox/buttonBox/doCullings
 	btn.pressed = generator.doCulling
 	btn = $CanvasLayer/UI/vbox/buttonBox/doConnections
 	btn.pressed = generator.doConnections
+	$"CanvasLayer/UI/vbox/Wall Limit".visible = generator.useRandomFill
+	$"CanvasLayer/UI/vbox/Fill Ratio".visible = generator.useRandomFill
+	$"CanvasLayer/UI/vbox/Min Wall".visible = generator.doCulling
+	$"CanvasLayer/UI/vbox/Min Room Area".visible = generator.doCulling
+	$"CanvasLayer/UI/vbox/Min Rooms".visible = generator.useRooms
+	$"CanvasLayer/UI/vbox/Max Rooms".visible = generator.useRooms
+	$"CanvasLayer/UI/vbox/Min Room Size".visible = generator.useRooms
+	$"CanvasLayer/UI/vbox/Max Room Size".visible = generator.useRooms
+
 	$"CanvasLayer/UI/vbox/Map H".value = generator.mapHeight
 	$"CanvasLayer/UI/vbox/Map W".value = generator.mapWidth
 	$"CanvasLayer/UI/vbox/Wall Limit".value = generator.wallsLimit
@@ -186,6 +195,7 @@ func _on_regen_pressed():
 
 func _on_autosmooth_toggled(button_pressed):
 	generator.autoSmooth = button_pressed
+	updateUI()
 
 
 func _on_Map_H_value_changed(value):
@@ -262,19 +272,24 @@ func _on_generator_update_ui():
 
 func _on_useRooms_toggled(button_pressed):
 	generator.useRooms = button_pressed
+	updateUI()
 
 
 func _on_useProbRooms_toggled(button_pressed):
 	generator.useProbRooms = button_pressed
-
-
-func _on_useCA_toggled(button_pressed):
-	generator.useCA = button_pressed
+	updateUI()
 
 
 func _on_doCullings_toggled(button_pressed):
 	generator.doCulling = button_pressed
+	updateUI()
 
 
 func _on_doConnections_toggled(button_pressed):
 	generator.doConnections = button_pressed
+	updateUI()
+
+
+func _on_useRandomFill_toggled(button_pressed):
+	generator.useRandomFill = button_pressed
+	updateUI()

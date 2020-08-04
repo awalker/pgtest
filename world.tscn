@@ -242,11 +242,11 @@ margin_right = 200.0
 margin_bottom = 52.0
 text = "Use % for Rooms"
 
-[node name="useCA" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="useRandomFill" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 56.0
 margin_right = 200.0
 margin_bottom = 80.0
-text = "Use Cellular Automata"
+text = "Use Random Fill"
 
 [node name="doCullings" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 84.0
@@ -324,7 +324,7 @@ fillRatio = 50
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Max Room Size" to="." method="_on_Max_Room_Size_value_changed"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useRooms" to="." method="_on_useRooms_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useProbRooms" to="." method="_on_useProbRooms_toggled"]
-[connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useCA" to="." method="_on_useCA_toggled"]
+[connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useRandomFill" to="." method="_on_useRandomFill_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/doCullings" to="." method="_on_doCullings_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/doConnections" to="." method="_on_doConnections_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]
