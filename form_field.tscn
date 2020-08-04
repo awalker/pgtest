@@ -3,7 +3,7 @@
 [sub_resource type="GDScript" id=1]
 script/source = "tool
 extends HBoxContainer
-class_name form_field
+class_name FormField
 
 export(String) var label_text:String# setget _set_label 
 var value:int = 0 setget _set_value, _get_value

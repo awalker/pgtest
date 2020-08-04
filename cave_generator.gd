@@ -40,9 +40,13 @@ var mouseRoomEdge: Vector2
 var highlightTiles: Room
 var listOfRooms := []
 
+# warning-ignore:unused_signal
 signal completed
+# warning-ignore:unused_signal
 signal progress(progress)
+# warning-ignore:unused_signal
 signal update_debug_canvas
+# warning-ignore:unused_signal
 signal update_ui
 
 
@@ -335,6 +339,8 @@ func mouseHighlight(p: Vector2):
 	working = true
 	exitMutex.unlock()
 	print("finding group")
+# warning-ignore:narrowing_conversion
+# warning-ignore:narrowing_conversion
 	highlightTiles = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
 	print(highlightTiles.size())
 	exitMutex.lock()

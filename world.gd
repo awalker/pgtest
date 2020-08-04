@@ -40,6 +40,34 @@ func _ready() -> void:
 	# _on_regen_pressed()
 
 
+func setUIDisabled(b: bool):
+	var btns := [
+		$CanvasLayer/UI/vbox/buttonBox/regen,
+		$CanvasLayer/UI/vbox/buttonBox/createRooms,
+		$CanvasLayer/UI/vbox/buttonBox/smooth,
+		$CanvasLayer/UI/vbox/buttonBox/autosmooth,
+		$CanvasLayer/UI/vbox/buttonBox/cull,
+		$CanvasLayer/UI/vbox/buttonBox/connectRooms
+	]
+	var forms := [
+		$CanvasLayer/UI/vbox/seed,
+		$"CanvasLayer/UI/vbox/Map W",
+		$"CanvasLayer/UI/vbox/Map H",
+		$"CanvasLayer/UI/vbox/Fill Ratio",
+		$"CanvasLayer/UI/vbox/Wall Limit",
+		$"CanvasLayer/UI/vbox/Min Wall",
+		$"CanvasLayer/UI/vbox/Min Room Area",
+		$"CanvasLayer/UI/vbox/Min Rooms",
+		$"CanvasLayer/UI/vbox/Min Room Size",
+		$"CanvasLayer/UI/vbox/Max Room Size",
+		$"CanvasLayer/UI/vbox/Max Rooms"
+	]
+	for btn in btns:
+		btn.disabled = b
+	for f in forms:
+		f.get_node("txt").editable = ! b
+
+
 func mapCameraUpdated() -> void:
 	var w = (mapWidth) * tileSize
 	var h = (mapHeight) * tileSize
@@ -216,6 +244,7 @@ func _on_seed_value_changed(value):
 
 
 func _on_generator_completed():
+	setUIDisabled(false)
 	working = false
 	generator.mapToTileMap(tileMap)
 	update()
@@ -223,6 +252,8 @@ func _on_generator_completed():
 
 
 func _on_generator_progress(progress):
+	if ! working:
+		setUIDisabled(true)
 	working = true
 	progressBar.value = progress
 
