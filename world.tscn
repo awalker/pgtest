@@ -298,18 +298,33 @@ __meta__ = {
 margin_left = 7.0
 margin_top = 7.0
 margin_right = 181.0
-margin_bottom = 44.0
+margin_bottom = 53.0
 
-[node name="Label" type="Label" parent="CanvasLayer/Working/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Working/VBoxContainer"]
 margin_right = 174.0
-margin_bottom = 14.0
+margin_bottom = 28.0
+
+[node name="Label" type="Label" parent="CanvasLayer/Working/VBoxContainer/HBoxContainer"]
+margin_top = -1.0
+margin_right = 122.0
+margin_bottom = 27.0
+rect_min_size = Vector2( 0, 28 )
+size_flags_horizontal = 3
 text = "Working"
 align = 1
+valign = 1
+
+[node name="ToolButton" type="ToolButton" parent="CanvasLayer/Working/VBoxContainer/HBoxContainer"]
+margin_left = 126.0
+margin_right = 174.0
+margin_bottom = 28.0
+rect_min_size = Vector2( 48, 0 )
+text = "X"
 
 [node name="ProgressBar" type="ProgressBar" parent="CanvasLayer/Working/VBoxContainer"]
-margin_top = 18.0
+margin_top = 32.0
 margin_right = 174.0
-margin_bottom = 37.0
+margin_bottom = 46.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -336,6 +351,7 @@ fillRatio = 50
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/doConnections" to="." method="_on_doConnections_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/regen" to="." method="_on_regen_pressed"]
+[connection signal="pressed" from="CanvasLayer/Working/VBoxContainer/HBoxContainer/ToolButton" to="." method="_on_ToolButton_pressed"]
 [connection signal="completed" from="generator" to="." method="_on_generator_completed"]
 [connection signal="progress" from="generator" to="." method="_on_generator_progress"]
 [connection signal="update_debug_canvas" from="generator" to="." method="_on_generator_update_debug_canvas"]

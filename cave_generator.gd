@@ -34,6 +34,7 @@ var exitMutex: Mutex
 var genSemaphore: Semaphore
 var genAction := ""
 var exitThread := false
+var requestStop := false
 
 var map := []
 # Dirt is "alive", Walls are "dead"
@@ -282,6 +283,7 @@ func _generator_thread_body(_userData):
 		exitMutex.lock()
 		exitMutex.unlock()
 		optionsMutex.lock()
+		requestStop = false
 		_sendProgress(0, 100)
 		var _action := genAction
 		match _action:
@@ -489,6 +491,9 @@ func _cull() -> void:
 	var i := 0
 	mapMutex.lock()
 	while i < walls.size():
+		if requestStop:
+			mapMutex.unlock()
+			return
 		if walls[0].size() < minWallArea:
 			print(walls[0].size())
 			# make all the walls in this tile group into dirt
@@ -503,6 +508,9 @@ func _cull() -> void:
 	i = 0
 	mapMutex.lock()
 	while i < dirts.size():
+		if requestStop:
+			mapMutex.unlock()
+			return
 		if dirts[0].size() < minRoomArea:
 			print(dirts[0].size())
 			# make all the walls in this tile group into dirt
@@ -680,6 +688,9 @@ func _connectRooms(forceConnect := false):
 			# print("r1 is connected. Skipping")
 			# continue
 			for g2i in groupDisconnected.size():
+				if requestStop:
+					mapMutex.unlock()
+					return
 				var r2: Room = groupDisconnected[g2i]
 				if r1 == r2:
 					print("r1 == r2. Skipping")
@@ -734,10 +745,18 @@ func _createRooms():
 
 func _regen():
 	createMapAtTimeZero()
+	if requestStop:
+		return
 	if useRooms:
 		makeRooms()
+	if requestStop:
+		return
 	doAutoSmoothing()
+	if requestStop:
+		return
 	if doCulling:
 		_cull()
+	if requestStop:
+		return
 	if doConnections:
 		_connectRooms()

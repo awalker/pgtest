@@ -299,3 +299,7 @@ func _on_useRandomFill_toggled(button_pressed):
 
 func _on_debugDrawing_pressed():
 	update()
+
+
+func _on_ToolButton_pressed():
+	generator.requestStop = true
