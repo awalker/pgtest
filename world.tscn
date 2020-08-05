@@ -231,44 +231,50 @@ margin_bottom = 586.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="useRooms" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="debugDrawing" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_right = 200.0
 margin_bottom = 24.0
-text = "Use Rooms"
+text = "Debug Drawing"
 
-[node name="useProbRooms" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="useRooms" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 28.0
 margin_right = 200.0
 margin_bottom = 52.0
-text = "Use % for Rooms"
+text = "Use Rooms"
 
-[node name="useRandomFill" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="useProbRooms" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 56.0
 margin_right = 200.0
 margin_bottom = 80.0
-text = "Use Random Fill"
+text = "Use % for Rooms"
 
-[node name="doCullings" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="useRandomFill" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 84.0
 margin_right = 200.0
 margin_bottom = 108.0
-text = "Do Culling"
+text = "Use Random Fill"
 
-[node name="doConnections" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="doCullings" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 112.0
 margin_right = 200.0
 margin_bottom = 136.0
-text = "Connect Rooms"
+text = "Do Culling"
 
-[node name="autosmooth" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="doConnections" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 140.0
 margin_right = 200.0
 margin_bottom = 164.0
+text = "Connect Rooms"
+
+[node name="autosmooth" type="CheckBox" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_top = 168.0
+margin_right = 200.0
+margin_bottom = 192.0
 size_flags_horizontal = 5
 text = "Auto Smooth"
 
 [node name="regen" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
-margin_top = 168.0
+margin_top = 196.0
 margin_right = 200.0
 margin_bottom = 234.0
 size_flags_vertical = 3
@@ -322,6 +328,7 @@ fillRatio = 50
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Max Rooms" to="." method="_on_Max_Rooms_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Min Room Size" to="." method="_on_Min_Room_Size_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Max Room Size" to="." method="_on_Max_Room_Size_value_changed"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/debugDrawing" to="." method="_on_debugDrawing_pressed"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useRooms" to="." method="_on_useRooms_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useProbRooms" to="." method="_on_useProbRooms_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/useRandomFill" to="." method="_on_useRandomFill_toggled"]

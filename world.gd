@@ -26,6 +26,7 @@ onready var tileMap: TileMap = $TileMap
 onready var mapCamera: Camera2D = $mapCamera
 onready var generator = $generator
 onready var progressBar = $CanvasLayer/Working/VBoxContainer/ProgressBar
+onready var debugDrawing = $CanvasLayer/UI/vbox/buttonBox/debugDrawing
 
 var makingARoom := false
 var mousePointer := Vector2.ZERO
@@ -126,7 +127,8 @@ func _process(_delta):
 
 
 func _draw():
-	generator.drawDebugCanvas(self)
+	if debugDrawing.pressed:
+		generator.drawDebugCanvas(self)
 
 
 func updateUI() -> void:
@@ -293,3 +295,7 @@ func _on_doConnections_toggled(button_pressed):
 func _on_useRandomFill_toggled(button_pressed):
 	generator.useRandomFill = button_pressed
 	updateUI()
+
+
+func _on_debugDrawing_pressed():
+	update()

@@ -627,6 +627,7 @@ func _connectRooms(forceConnect := false):
 	if listOfRooms.size() == 0:
 		cull()
 	print("_connectRooms room count %d" % listOfRooms.size())
+	_sendProgress(0, listOfRooms.size())
 	var mainRoom: Room = listOfRooms[listOfRooms.size() - 1]
 	mainRoom.isMain = true
 	mainRoom.isConnectedToMain = true
@@ -675,16 +676,16 @@ func _connectRooms(forceConnect := false):
 			print("r1 %s" % r1)
 			if cdetails.size() and not forceConnect:
 				cdetails = []
-			if not forceConnect and r1.connected.size() > 0:
-				print("r1 is connected. Skipping")
-				continue
+			# if not forceConnect and r1.connected.size() > 0:
+			# print("r1 is connected. Skipping")
+			# continue
 			for g2i in groupDisconnected.size():
 				var r2: Room = groupDisconnected[g2i]
 				if r1 == r2:
 					print("r1 == r2. Skipping")
 					continue
-				if not forceConnect and r2.connected.size() > 0:
-					continue
+				# if not forceConnect and r2.connected.size() > 0:
+				# continue
 				var details: Array = r1.findClosest(groupDisconnected)
 				var tmp: float = details[1].distance_squared_to(details[2])
 				if tmp < d:
