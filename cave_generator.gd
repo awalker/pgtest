@@ -37,8 +37,10 @@ var exitThread := false
 var requestStop := false
 
 var map := []
-# Dirt is "alive", Walls are "dead"
-enum Tiles { DIRT, WALL, GRASS, VOID }
+var items := []
+# TODO: Would be nice to add door_open and door_closed (and maybe door_locked) to either the tiles or items
+enum Tiles { DIRT, WALL, GRASS, VOID_TILE }
+enum Items { NO_ITEM, ENTRANCE, EXIT, ITEM1, ITEM2, ITEM3, ENEMY1, ENEMY2, ENEMY3 }
 
 var makingARoom := false
 var mousePointer := Vector2.ZERO
@@ -189,8 +191,8 @@ class Room:
 
 	func findClosest(rooms: Array, map: Array):
 		"""Currently, this find a close-ish room.
-    The first round of judges distance by center. Probably should just
-    compare all the points everywhere"""
+	The first round of judges distance by center. Probably should just
+	compare all the points everywhere"""
 		findEdges(map)
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -614,14 +616,19 @@ func createMapAtTimeZero() -> void:
 	else:
 		rnd.randomize()
 	map = []
+	items = []
 	rooms = []
 	time = 0
 	map.resize(mapWidth)
+	items.resize(mapWidth)
 	var _fillRatio := fillRatio if useRandomFill else 0
 	for x in range(0, mapWidth):
 		var tmap := []
+		var titems := []
 		tmap.resize(mapHeight)
+		titems.resize(mapHeight)
 		map[x] = tmap
+		items[x] = titems
 		for y in range(0, mapHeight):
 			var tile: int = Tiles.WALL
 			if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
@@ -631,6 +638,7 @@ func createMapAtTimeZero() -> void:
 				else:
 					tile = Tiles.WALL
 			tmap[y] = tile
+			titems[y] = Items.NO_ITEM
 	mapMutex.unlock()
 
 
@@ -788,24 +796,59 @@ func _createRooms():
 	doAutoSmoothing()
 
 
+func _getRandomRoomTile(room: Room) -> Vector2:
+	print("_getRandomRoomTile")
+	var out: Vector2
+	while not out:
+		print("not out %s" % room.regions)
+		var xs := room.regions.keys()
+		var x := rnd.randi_range(xs[1], xs[-1])
+		var ys: Array = room.regions[x]
+		print("ys %s" % ys)
+		var d = ys[1] - ys[0]
+		print("d")
+		# print("x %s d %s" % [x, d])
+		if d >= 3:
+			print("d >= 3")
+			var y := rnd.randi_range(ys[0], ys[1])
+			out = Vector2(x, y)
+	print("get random tile %s" % out)
+	return out
+
+
+func _placeEntranceAndExit():
+	print("_placeEntranceAndExit")
+	var entranceRoom: Room
+	var exitRoom: Room
+	if listOfRooms.size() == 1:
+		entranceRoom = listOfRooms[0]
+		exitRoom = listOfRooms[0]
+	else:
+		entranceRoom = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
+		while not exitRoom:
+			var t: Room = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
+			if t != entranceRoom:
+				exitRoom = t
+	print(entranceRoom)
+	print(exitRoom)
+	var v: Vector2 = _getRandomRoomTile(entranceRoom)
+	items[v.x][v.y] = Items.ENTRANCE
+	v = _getRandomRoomTile(exitRoom)
+	items[v.x][v.y] = Items.EXIT
+
+
 func _regen():
 	createMapAtTimeZero()
-	if requestStop:
-		return
-	if useRooms:
+	if not requestStop and useRooms:
 		makeRooms()
-	if requestStop:
-		return
-	doAutoSmoothing()
-	if requestStop:
-		return
-	if doCulling:
-		_cull()
-	if requestStop:
-		return
-	if doConnections:
-		_connectRooms()
-		if requestStop:
-			return
-		_carveTunnels()
+	if not requestStop:
 		doAutoSmoothing()
+	if not requestStop and doCulling:
+		_cull()
+	if not requestStop and doConnections:
+		_connectRooms()
+		if not requestStop:
+			_carveTunnels()
+			doAutoSmoothing()
+		if not requestStop:
+			_placeEntranceAndExit()
