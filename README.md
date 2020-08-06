@@ -5,7 +5,6 @@ Creates a cave system from cellular automata and/or blasting rooms into the wall
 
 # Milestone TODOs:
 
-* Actually carve out the tunnels
 * fix the edge generator to get all the edges
 * Place entrance and exit (possible support for screen side entrance and exit)
 * Place decorative items
