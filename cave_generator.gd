@@ -44,6 +44,7 @@ var map := []
 var items := []
 # TODO: Would be nice to add door_open and door_closed (and maybe door_locked) to either the tiles or items
 enum Tiles { DIRT, WALL, GRASS, VOID_TILE }
+# Most of these represent tiers of items/enemy spawns, not actual items or enemy spawns
 enum Items { NO_ITEM, ENTRANCE, EXIT, ITEM1, ITEM2, ITEM3, ENEMY1, ENEMY2, ENEMY3 }
 
 var makingARoom := false
@@ -838,6 +839,9 @@ func _getRandomRoomTile(room: Room) -> Vector2:
 
 func _placeEntranceAndExit():
 	print("_placeEntranceAndExit")
+	# TODO: Should at least make sure the entrance is not close to the exit.
+	# TODO: May want to account for other items, if the exits are not placed first
+	# TODO: May want to make sure higher tier items/enemies are not placed close to the entrance
 	var entranceRoom: Room
 	var exitRoom: Room
 	if listOfRooms.size() == 1:
