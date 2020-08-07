@@ -395,6 +395,18 @@ func drawDebugCanvas(node: Node2D):
 			var r: Room = _list[i]
 			r.drawConnections(Color.yellow, tileSize, node)
 
+	if mapMutex.try_lock() == OK:
+		for x in mapWidth:
+			for y in mapHeight:
+				var i: int = items[x][y]
+				if i:
+					node.draw_circle(
+						Vector2((x + 0.5) * tileSize, (y + 0.5) * tileSize),
+						15,
+						Color.seashell if i == Items.ENTRANCE else Color.sienna
+					)
+		mapMutex.unlock()
+
 
 func makeRooms() -> void:
 	var roomCount := rnd.randi_range(roomCountRange.x as int, roomCountRange.y as int)
