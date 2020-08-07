@@ -196,8 +196,8 @@ class Room:
 
 	func findClosest(rooms: Array, map: Array):
 		"""Currently, this find a close-ish room.
-    The first round of judges distance by center. Probably should just
-    compare all the points everywhere"""
+	The first round of judges distance by center. Probably should just
+	compare all the points everywhere"""
 		findEdges(map)
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -383,12 +383,12 @@ func drawDebugCanvas(node: Node2D):
 	# Either get mutexes or make copies or rooms, highlights, etc
 	var _highlights: Room
 	var _list: Array
-	if mapMutex.try_lock() == OK:
+	if map.size() == mapWidth:
 		_highlights = highlightTiles
 		_list = listOfRooms
 		if _highlights:
 			_highlights.draw(Color("#00FF00" if working else "#0000FF"), tileSize, node)
-		mapMutex.unlock()
+		# mapMutex.unlock()
 
 	if rooms:
 		for r in rooms:
@@ -400,7 +400,7 @@ func drawDebugCanvas(node: Node2D):
 			var r: Room = _list[i]
 			r.drawConnections(Color.yellow, tileSize, node)
 
-	if mapMutex.try_lock() == OK:
+	if map.size() == mapWidth:
 		for x in mapWidth:
 			for y in mapHeight:
 				var i: int = items[x][y]
@@ -410,7 +410,19 @@ func drawDebugCanvas(node: Node2D):
 						15,
 						Color.seashell if i == Items.ENTRANCE else Color.sienna
 					)
-		mapMutex.unlock()
+				if map[x][y] == Tiles.DIRT:
+					var f := noise.get_noise_2d(x, y)
+					var c := Color.white
+					if f >= 0.15 && f < 0.45:
+						c = Color.red
+					elif f >= 0.45:
+						c = Color.green
+					node.draw_rect(
+						Rect2(Vector2(x * tileSize, y * tileSize), Vector2(tileSize, tileSize)),
+						c * f,
+						true
+					)
+		# mapMutex.unlock()
 
 
 func makeRooms() -> void:
