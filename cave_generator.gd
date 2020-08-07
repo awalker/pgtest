@@ -12,6 +12,9 @@ export (int) var minRoomArea := 75
 export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
+export (int) var octaves := 4
+export (float) var period := 20.0
+export (float) var persistence := 0.8
 
 export (bool) var useRooms := true
 export (bool) var useProbRooms := true
@@ -35,6 +38,7 @@ var genSemaphore: Semaphore
 var genAction := ""
 var exitThread := false
 var requestStop := false
+var noise := OpenSimplexNoise.new()
 
 var map := []
 var items := []
@@ -191,8 +195,8 @@ class Room:
 
 	func findClosest(rooms: Array, map: Array):
 		"""Currently, this find a close-ish room.
-	The first round of judges distance by center. Probably should just
-	compare all the points everywhere"""
+    The first round of judges distance by center. Probably should just
+    compare all the points everywhere"""
 		findEdges(map)
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -627,6 +631,10 @@ func createMapAtTimeZero() -> void:
 		rnd.seed = hash(level_seed)
 	else:
 		rnd.randomize()
+	noise.seed = rnd.randi()
+	noise.octaves = octaves
+	noise.period = period
+	noise.persistence = persistence
 	map = []
 	items = []
 	rooms = []
