@@ -468,7 +468,7 @@ func makeAMouseArea(center: Vector2, edge: Vector2) -> void:
 				1.0
 				- clamp(center.distance_squared_to(Vector2(x, y)) / maxDistSq, 0.0, 1.0)
 			)
-			if rnd.randf() < percent:
+			if not useProbRooms || rnd.randf() < percent:
 				tile = Tiles.DIRT
 			map[x][y] = tile
 	mapMutex.unlock()
