@@ -12,6 +12,9 @@ export (int) var minRoomArea := 75
 export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
+export (int) var octaves := 4
+export (float) var period := 20.0
+export (float) var persistence := 0.8
 
 export (bool) var useRooms := true
 export (bool) var useProbRooms := true
@@ -35,11 +38,13 @@ var genSemaphore: Semaphore
 var genAction := ""
 var exitThread := false
 var requestStop := false
+var noise := OpenSimplexNoise.new()
 
 var map := []
 var items := []
 # TODO: Would be nice to add door_open and door_closed (and maybe door_locked) to either the tiles or items
 enum Tiles { DIRT, WALL, GRASS, VOID_TILE }
+# Most of these represent tiers of items/enemy spawns, not actual items or enemy spawns
 enum Items { NO_ITEM, ENTRANCE, EXIT, ITEM1, ITEM2, ITEM3, ENEMY1, ENEMY2, ENEMY3 }
 
 var makingARoom := false
@@ -369,31 +374,55 @@ func mouseHighlight(p: Vector2):
 
 
 func drawDebugCanvas(node: Node2D):
-    if makingARoom:
-        var radius := 5.0
-        if mouseRoomEdge:
-            radius = mouseRoomCenter.distance_to(mouseRoomEdge)
-        node.draw_circle(mouseRoomCenter, radius, Color.red)
-    node.draw_circle(mousePointer, 15.0, Color.green)
-    # Either get mutexes or make copies or rooms, highlights, etc
-    var _highlights: Room
-    var _list: Array
-    if mapMutex.try_lock() == OK:
-        _highlights = highlightTiles
-        _list = listOfRooms
-        if _highlights:
-            _highlights.draw(Color("#00FF00" if working else "#0000FF"), tileSize, node)
-        mapMutex.unlock()
+	if makingARoom:
+		var radius := 5.0
+		if mouseRoomEdge:
+			radius = mouseRoomCenter.distance_to(mouseRoomEdge)
+		node.draw_circle(mouseRoomCenter, radius, Color.red)
+	node.draw_circle(mousePointer, 15.0, Color.green)
+	# Either get mutexes or make copies or rooms, highlights, etc
+	var _highlights: Room
+	var _list: Array
+	if map.size() == mapWidth:
+		_highlights = highlightTiles
+		_list = listOfRooms
+		if _highlights:
+			_highlights.draw(Color("#00FF00" if working else "#0000FF"), tileSize, node)
+		# mapMutex.unlock()
 
-    if rooms:
-        for r in rooms:
-            node.draw_circle(
-                Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow
-            )
-    if _list:
-        for i in _list.size():
-            var r: Room = _list[i]
-            r.drawConnections(Color.yellow, tileSize, node)
+	if rooms:
+		for r in rooms:
+			node.draw_circle(
+				Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow
+			)
+	if _list:
+		for i in _list.size():
+			var r: Room = _list[i]
+			r.drawConnections(Color.yellow, tileSize, node)
+
+	if map.size() == mapWidth:
+		for x in mapWidth:
+			for y in mapHeight:
+				var i: int = items[x][y]
+				if i:
+					node.draw_circle(
+						Vector2((x + 0.5) * tileSize, (y + 0.5) * tileSize),
+						15,
+						Color.seashell if i == Items.ENTRANCE else Color.sienna
+					)
+				if map[x][y] == Tiles.DIRT:
+					var f := noise.get_noise_2d(x, y)
+					var c := Color.white
+					if f >= 0.15 && f < 0.45:
+						c = Color.red
+					elif f >= 0.45:
+						c = Color.green
+					node.draw_rect(
+						Rect2(Vector2(x * tileSize, y * tileSize), Vector2(tileSize, tileSize)),
+						c * f,
+						true
+					)
+		# mapMutex.unlock()
 
 
 func makeRooms() -> void:
@@ -423,26 +452,26 @@ func makeRooms() -> void:
 
 
 func makeAMouseArea(center: Vector2, edge: Vector2) -> void:
-    # Create Our MouseArea
-    var maxDistSq := center.distance_squared_to(edge)
-    var maxDist := center.distance_to(edge)
-    var cx := round(center.x) as int
-    var cy := round(center.y) as int
-    var tl := Vector2(cx - maxDist, cy - maxDist)
-    mapMutex.lock()
-    for _y in range(tl.y, tl.y + maxDist * 2):
-        for _x in range(tl.x, tl.x + maxDist * 2):
-            var x: int = clamp(_x, 0, mapWidth - 1) as int
-            var y: int = clamp(_y, 0, mapHeight - 1) as int
-            var tile: int = map[x][y]
-            var percent := (
-                1.0
-                - clamp(center.distance_squared_to(Vector2(x, y)) / maxDistSq, 0.0, 1.0)
-            )
-            if rnd.randf() < percent:
-                tile = Tiles.DIRT
-            map[x][y] = tile
-    mapMutex.unlock()
+	# Create Our MouseArea
+	var maxDistSq := center.distance_squared_to(edge)
+	var maxDist := center.distance_to(edge)
+	var cx := round(center.x) as int
+	var cy := round(center.y) as int
+	var tl := Vector2(cx - maxDist, cy - maxDist)
+	mapMutex.lock()
+	for _y in range(tl.y, tl.y + maxDist * 2):
+		for _x in range(tl.x, tl.x + maxDist * 2):
+			var x: int = clamp(_x, 0, mapWidth - 1) as int
+			var y: int = clamp(_y, 0, mapHeight - 1) as int
+			var tile: int = map[x][y]
+			var percent := (
+				1.0
+				- clamp(center.distance_squared_to(Vector2(x, y)) / maxDistSq, 0.0, 1.0)
+			)
+			if not useProbRooms || rnd.randf() < percent:
+				tile = Tiles.DIRT
+			map[x][y] = tile
+	mapMutex.unlock()
 
 
 func updateUI():
@@ -608,38 +637,42 @@ func findRestOfGroup(data: Array, type: int) -> Array:
 
 
 func createMapAtTimeZero() -> void:
-    mapMutex.lock()
-    listOfRooms = []
-    highlightTiles = null
-    if level_seed:
-        rnd.seed = hash(level_seed)
-    else:
-        rnd.randomize()
-    map = []
-    items = []
-    rooms = []
-    time = 0
-    map.resize(mapWidth)
-    items.resize(mapWidth)
-    var _fillRatio := fillRatio if useRandomFill else 0
-    for x in range(0, mapWidth):
-        var tmap := []
-        var titems := []
-        tmap.resize(mapHeight)
-        titems.resize(mapHeight)
-        map[x] = tmap
-        items[x] = titems
-        for y in range(0, mapHeight):
-            var tile: int = Tiles.WALL
-            if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
-                var r = rnd.randi_range(0, 100)
-                if r < _fillRatio:
-                    tile = Tiles.DIRT
-                else:
-                    tile = Tiles.WALL
-            tmap[y] = tile
-            titems[y] = Items.NO_ITEM
-    mapMutex.unlock()
+	mapMutex.lock()
+	listOfRooms = []
+	highlightTiles = null
+	if level_seed:
+		rnd.seed = hash(level_seed)
+	else:
+		rnd.randomize()
+	noise.seed = rnd.randi()
+	noise.octaves = octaves
+	noise.period = period
+	noise.persistence = persistence
+	map = []
+	items = []
+	rooms = []
+	time = 0
+	map.resize(mapWidth)
+	items.resize(mapWidth)
+	var _fillRatio := fillRatio if useRandomFill else 0
+	for x in range(0, mapWidth):
+		var tmap := []
+		var titems := []
+		tmap.resize(mapHeight)
+		titems.resize(mapHeight)
+		map[x] = tmap
+		items[x] = titems
+		for y in range(0, mapHeight):
+			var tile: int = Tiles.WALL
+			if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
+				var r = rnd.randi_range(0, 100)
+				if r < _fillRatio:
+					tile = Tiles.DIRT
+				else:
+					tile = Tiles.WALL
+			tmap[y] = tile
+			titems[y] = Items.NO_ITEM
+	mapMutex.unlock()
 
 
 func doAutoSmoothing():
@@ -817,24 +850,27 @@ func _getRandomRoomTile(room: Room) -> Vector2:
 
 
 func _placeEntranceAndExit():
-    print("_placeEntranceAndExit")
-    var entranceRoom: Room
-    var exitRoom: Room
-    if listOfRooms.size() == 1:
-        entranceRoom = listOfRooms[0]
-        exitRoom = listOfRooms[0]
-    else:
-        entranceRoom = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
-        while not exitRoom:
-            var t: Room = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
-            if t != entranceRoom:
-                exitRoom = t
-    print(entranceRoom)
-    print(exitRoom)
-    var v: Vector2 = _getRandomRoomTile(entranceRoom)
-    items[v.x][v.y] = Items.ENTRANCE
-    v = _getRandomRoomTile(exitRoom)
-    items[v.x][v.y] = Items.EXIT
+	print("_placeEntranceAndExit")
+	# TODO: Should at least make sure the entrance is not close to the exit.
+	# TODO: May want to account for other items, if the exits are not placed first
+	# TODO: May want to make sure higher tier items/enemies are not placed close to the entrance
+	var entranceRoom: Room
+	var exitRoom: Room
+	if listOfRooms.size() == 1:
+		entranceRoom = listOfRooms[0]
+		exitRoom = listOfRooms[0]
+	else:
+		entranceRoom = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
+		while not exitRoom:
+			var t: Room = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
+			if t != entranceRoom:
+				exitRoom = t
+	print(entranceRoom)
+	print(exitRoom)
+	var v: Vector2 = _getRandomRoomTile(entranceRoom)
+	items[v.x][v.y] = Items.ENTRANCE
+	v = _getRandomRoomTile(exitRoom)
+	items[v.x][v.y] = Items.EXIT
 
 
 func _regen():

@@ -191,6 +191,7 @@ func updateGeneratorOptions():
 
 
 func _on_regen_pressed():
+	debugDrawing.pressed = false
 	updateGeneratorOptions()
 	generator.regen()
 
