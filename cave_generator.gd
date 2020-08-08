@@ -41,7 +41,7 @@ var requestStop := false
 var noise := OpenSimplexNoise.new()
 
 var map := []
-var items := []
+var itemMap := []
 # TODO: Would be nice to add door_open and door_closed (and maybe door_locked) to either the tiles or items
 enum Tiles { DIRT, WALL, GRASS, VOID_TILE }
 # Most of these represent tiers of items/enemy spawns, not actual items or enemy spawns
@@ -403,7 +403,7 @@ func drawDebugCanvas(node: Node2D):
 	if map.size() == mapWidth:
 		for x in mapWidth:
 			for y in mapHeight:
-				var i: int = items[x][y]
+				var i: int = itemMap[x][y]
 				if i:
 					node.draw_circle(
 						Vector2((x + 0.5) * tileSize, (y + 0.5) * tileSize),
@@ -511,13 +511,21 @@ func countWallsInNeighborhood(x: int, y: int) -> int:
     return wallCount
 
 
-func mapToTileMap(tileMap: TileMap) -> void:
+func mapToTileMap(tileMap: TileMap, onlyDirt = false, dirtValue = Tiles.DIRT) -> void:
+    """Probably should be in the world's code."""
     mapMutex.lock()
     tileMap.clear()
     for x in range(0, mapWidth):
         for y in range(0, mapHeight):
-            tileMap.set_cell(x, y, map[x][y])
+            var t : int = map[x][y]
+            if onlyDirt && t == Tiles.DIRT:
+                tileMap.set_cell(x, y, dirtValue)
+            elif !onlyDirt:
+                tileMap.set_cell(x, y, t)
     mapMutex.unlock()
+
+func generateItemPlaces() -> void:
+    pass
 
 
 func walls_sort_small(a: Room, b: Room) -> bool:
@@ -649,11 +657,11 @@ func createMapAtTimeZero() -> void:
 	noise.period = period
 	noise.persistence = persistence
 	map = []
-	items = []
+	itemMap = []
 	rooms = []
 	time = 0
 	map.resize(mapWidth)
-	items.resize(mapWidth)
+	itemMap.resize(mapWidth)
 	var _fillRatio := fillRatio if useRandomFill else 0
 	for x in range(0, mapWidth):
 		var tmap := []
@@ -661,7 +669,7 @@ func createMapAtTimeZero() -> void:
 		tmap.resize(mapHeight)
 		titems.resize(mapHeight)
 		map[x] = tmap
-		items[x] = titems
+		itemMap[x] = titems
 		for y in range(0, mapHeight):
 			var tile: int = Tiles.WALL
 			if x > 0 && x < mapWidth - 1 && y > 0 && y < mapHeight - 1:
@@ -868,9 +876,9 @@ func _placeEntranceAndExit():
 	print(entranceRoom)
 	print(exitRoom)
 	var v: Vector2 = _getRandomRoomTile(entranceRoom)
-	items[v.x][v.y] = Items.ENTRANCE
+	itemMap[v.x][v.y] = Items.ENTRANCE
 	v = _getRandomRoomTile(exitRoom)
-	items[v.x][v.y] = Items.EXIT
+	itemMap[v.x][v.y] = Items.EXIT
 
 
 func _regen():
