@@ -17,9 +17,6 @@ var autoSmooth := true
 
 var rooms := []
 
-var rnd := RandomNumberGenerator.new()
-
-var time := 0
 var working := false
 
 onready var tileMap: TileMap = $TileMap
@@ -95,7 +92,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		generator.mousePointer = get_global_mouse_position()
 		update()
 	if ! _working && Input.is_mouse_button_pressed(2):
-		var p = get_global_mouse_position()
+		# var p = get_global_mouse_position()
 		print("finding group")
 		# highlightTiles = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
 		# print(highlightTiles.size())
