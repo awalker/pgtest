@@ -3,6 +3,10 @@
 
 Creates a cave system from cellular automata and/or blasting rooms into the walls. Currently using multi-threaded GDscript, really work is done a separate worker thread. Could possibly split some sections into more workers/threads.
 
+# Credits
+
+https://opengameart.org/content/zelda-like-tilesets-and-sprites
+
 # Milestone TODOs:
 
 * Place entrance and exit (possible support for screen side entrance and exit)

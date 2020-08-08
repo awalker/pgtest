@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=15 format=2]
 
 [ext_resource path="res://simple_tiles.png" type="Texture" id=1]
 [ext_resource path="res://world.gd" type="Script" id=2]
 [ext_resource path="res://form_field.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Fill Ratio.tscn" type="PackedScene" id=4]
+[ext_resource path="res://gfx/cave.png" type="Texture" id=5]
 [ext_resource path="res://text_field.tscn" type="PackedScene" id=6]
 [ext_resource path="res://cave_generator.gd" type="Script" id=7]
 
@@ -98,6 +99,31 @@ points = PoolVector2Array( 0, 0, 32, 0, 32, 32, 0, 32 )
 "shape_transform": Transform2D( 1, 0, 0, 1, 0, 0 )
 } ]
 3/z_index = 0
+
+[sub_resource type="TileSet" id=7]
+0/name = "cave.png 0"
+0/texture = ExtResource( 5 )
+0/tex_offset = Vector2( 0, 0 )
+0/modulate = Color( 1, 1, 1, 1 )
+0/region = Rect2( 112, 48, 144, 64 )
+0/tile_mode = 1
+0/autotile/bitmask_mode = 0
+0/autotile/bitmask_flags = [ Vector2( 0, 0 ), 325, Vector2( 4, 1 ), 69, Vector2( 4, 2 ), 65, Vector2( 4, 3 ), 321, Vector2( 5, 1 ), 5, Vector2( 5, 3 ), 320, Vector2( 6, 1 ), 261, Vector2( 6, 2 ), 260, Vector2( 6, 3 ), 324, Vector2( 7, 1 ), 256, Vector2( 7, 2 ), 4, Vector2( 7, 3 ), 257, Vector2( 8, 1 ), 64, Vector2( 8, 2 ), 1, Vector2( 8, 3 ), 68 ]
+0/autotile/icon_coordinate = Vector2( 0, 0 )
+0/autotile/tile_size = Vector2( 16, 16 )
+0/autotile/spacing = 0
+0/autotile/occluder_map = [  ]
+0/autotile/navpoly_map = [  ]
+0/autotile/priority_map = [  ]
+0/autotile/z_index_map = [  ]
+0/occluder_offset = Vector2( 0, 0 )
+0/navigation_offset = Vector2( 0, 0 )
+0/shape_offset = Vector2( 0, 0 )
+0/shape_transform = Transform2D( 1, 0, 0, 1, 0, 0 )
+0/shape_one_way = false
+0/shape_one_way_margin = 0.0
+0/shapes = [  ]
+0/z_index = 0
 
 [node name="world" type="Node2D"]
 script = ExtResource( 2 )
@@ -331,6 +357,11 @@ size_flags_vertical = 3
 script = ExtResource( 7 )
 level_seed = "2020"
 fillRatio = 50
+
+[node name="TileMap2" type="TileMap" parent="."]
+tile_set = SubResource( 7 )
+cell_size = Vector2( 16, 16 )
+format = 1
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/seed" to="." method="_on_seed_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map W" to="." method="_on_Map_W_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map H" to="." method="_on_Map_H_value_changed"]
