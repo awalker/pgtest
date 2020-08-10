@@ -4,7 +4,7 @@ class_name CaveWorld
 export var level_seed: String
 export (int) var mapWidth := 256
 export (int) var mapHeight := 240
-export (int) var tileSize := 32
+export (int) var tileSize := 16
 export (int) var fillRatio := 40
 export (int) var maxTime := 2
 export (int) var wallsLimit := 4
@@ -18,6 +18,7 @@ var autoSmooth := true
 var rooms := []
 
 var working := false
+var playMode := false
 
 onready var tileMap: TileMap = $TileMap
 onready var mapCamera: Camera2D = $mapCamera
@@ -129,6 +130,7 @@ func _draw():
 
 
 func updateUI() -> void:
+	generator.tileSize = tileSize
 	$CanvasLayer/h/Time.text = "Time: " + str(generator.time)
 	$"CanvasLayer/UI/vbox/Fill Ratio".value = generator.fillRatio
 	var asBtn: CheckBox = $CanvasLayer/UI/vbox/buttonBox/autosmooth
@@ -249,7 +251,8 @@ func _on_seed_value_changed(value):
 func _on_generator_completed():
 	setUIDisabled(false)
 	working = false
-	generator.mapToTileMap(tileMap)
+	generator.mapToTileMap(tileMap, true, 0)
+	tileMap.update_bitmask_region()
 	update()
 	updateUI()
 	mapCameraUpdated()

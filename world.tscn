@@ -105,11 +105,11 @@ points = PoolVector2Array( 0, 0, 32, 0, 32, 32, 0, 32 )
 0/texture = ExtResource( 5 )
 0/tex_offset = Vector2( 0, 0 )
 0/modulate = Color( 1, 1, 1, 1 )
-0/region = Rect2( 112, 48, 144, 64 )
+0/region = Rect2( 80, 48, 176, 64 )
 0/tile_mode = 1
 0/autotile/bitmask_mode = 0
-0/autotile/bitmask_flags = [ Vector2( 0, 0 ), 325, Vector2( 4, 1 ), 69, Vector2( 4, 2 ), 65, Vector2( 4, 3 ), 321, Vector2( 5, 1 ), 5, Vector2( 5, 3 ), 320, Vector2( 6, 1 ), 261, Vector2( 6, 2 ), 260, Vector2( 6, 3 ), 324, Vector2( 7, 1 ), 256, Vector2( 7, 2 ), 4, Vector2( 7, 3 ), 257, Vector2( 8, 1 ), 64, Vector2( 8, 2 ), 1, Vector2( 8, 3 ), 68 ]
-0/autotile/icon_coordinate = Vector2( 0, 0 )
+0/autotile/bitmask_flags = [ Vector2( 2, 0 ), 325, Vector2( 6, 1 ), 69, Vector2( 6, 2 ), 65, Vector2( 6, 3 ), 321, Vector2( 7, 1 ), 5, Vector2( 7, 3 ), 320, Vector2( 8, 1 ), 261, Vector2( 8, 2 ), 260, Vector2( 8, 3 ), 324, Vector2( 9, 1 ), 256, Vector2( 9, 2 ), 4, Vector2( 9, 3 ), 257, Vector2( 10, 1 ), 64, Vector2( 10, 2 ), 1, Vector2( 10, 3 ), 68 ]
+0/autotile/icon_coordinate = Vector2( 2, 0 )
 0/autotile/tile_size = Vector2( 16, 16 )
 0/autotile/spacing = 0
 0/autotile/occluder_map = [  ]
@@ -128,10 +128,17 @@ points = PoolVector2Array( 0, 0, 32, 0, 32, 32, 0, 32 )
 [node name="world" type="Node2D"]
 script = ExtResource( 2 )
 
-[node name="TileMap" type="TileMap" parent="."]
+[node name="TileMapOld" type="TileMap" parent="."]
+visible = false
 show_behind_parent = true
 tile_set = SubResource( 6 )
 cell_size = Vector2( 32, 32 )
+format = 1
+
+[node name="TileMap" type="TileMap" parent="."]
+show_behind_parent = true
+tile_set = SubResource( 7 )
+cell_size = Vector2( 16, 16 )
 format = 1
 
 [node name="mapCamera" type="Camera2D" parent="."]
@@ -357,11 +364,6 @@ size_flags_vertical = 3
 script = ExtResource( 7 )
 level_seed = "2020"
 fillRatio = 50
-
-[node name="TileMap2" type="TileMap" parent="."]
-tile_set = SubResource( 7 )
-cell_size = Vector2( 16, 16 )
-format = 1
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/seed" to="." method="_on_seed_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map W" to="." method="_on_Map_W_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map H" to="." method="_on_Map_H_value_changed"]
