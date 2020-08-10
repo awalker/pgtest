@@ -197,8 +197,8 @@ class Room:
 
 	func findClosest(rooms: Array, map: Array):
 		"""Currently, this find a close-ish room.
-	The first round of judges distance by center. Probably should just
-	compare all the points everywhere"""
+    The first round of judges distance by center. Probably should just
+    compare all the points everywhere"""
 		findEdges(map)
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -527,7 +527,19 @@ func mapToTileMap(tileMap: TileMap, onlyDirt = false, dirtValue = Tiles.DIRT) ->
 
 
 func generateItemPlaces() -> void:
-	pass
+	mapMutex.lock()
+	var items := []
+	for y in mapHeight:
+		for x in mapWidth:
+			if itemMap[x][y]:
+				items.append(itemMap[x][y])
+			else:
+				var f := noise.get_noise_2d(x, y)
+				if f >= 0.15 && f < 0.45:
+					var r := rnd.randi_range(0, 100)
+				elif f >= 0.45:
+					var r := rnd.randi_range(0, 100)
+	mapMutex.unlock()
 
 
 func walls_sort_small(a: Room, b: Room) -> bool:
@@ -899,3 +911,5 @@ func _regen():
 			doAutoSmoothing()
 		if not requestStop:
 			_placeEntranceAndExit()
+		if not requestStop:
+			generateItemPlaces()
