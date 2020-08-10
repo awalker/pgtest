@@ -39,6 +39,7 @@ var genAction := ""
 var exitThread := false
 var requestStop := false
 var noise := OpenSimplexNoise.new()
+var entrance := Vector2.ZERO
 
 var map := []
 var itemMap := []
@@ -517,12 +518,13 @@ func mapToTileMap(tileMap: TileMap, onlyDirt = false, dirtValue = Tiles.DIRT) ->
 	tileMap.clear()
 	for x in range(0, mapWidth):
 		for y in range(0, mapHeight):
-			var t : int = map[x][y]
+			var t: int = map[x][y]
 			if onlyDirt && t == Tiles.DIRT:
 				tileMap.set_cell(x, y, dirtValue)
-			elif !onlyDirt:
+			elif ! onlyDirt:
 				tileMap.set_cell(x, y, t)
 	mapMutex.unlock()
+
 
 func generateItemPlaces() -> void:
 	pass
@@ -876,6 +878,7 @@ func _placeEntranceAndExit():
 	print(entranceRoom)
 	print(exitRoom)
 	var v: Vector2 = _getRandomRoomTile(entranceRoom)
+	entrance = v
 	itemMap[v.x][v.y] = Items.ENTRANCE
 	v = _getRandomRoomTile(exitRoom)
 	itemMap[v.x][v.y] = Items.EXIT

@@ -12,6 +12,7 @@ export (int) var minRoomArea := 75
 export (int) var minWallArea := 30
 export (Vector2) var roomCountRange := Vector2(4, 10)
 export (Vector2) var roomSizeRange := Vector2(15, 50)
+const Player = preload("res://Player.gd")
 
 var autoSmooth := true
 
@@ -30,11 +31,13 @@ var makingARoom := false
 var mousePointer := Vector2.ZERO
 var mouseRoomCenter: Vector2
 var mouseRoomEdge: Vector2
+onready var player: Player = $Player
 
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	mapCameraUpdated()
+	# playerCameraUpdated()
 	updateUI()
 	# _on_regen_pressed()
 
@@ -78,17 +81,35 @@ func mapCameraUpdated() -> void:
 	mapCamera.zoom = Vector2(z, z)
 
 
+func playerCameraUpdated() -> void:
+	var pc: Camera2D = $Player/Camera2d
+	var zx = (get_viewport_rect().size.x) / 16
+	var zy = (get_viewport_rect().size.y) / 16
+	var z = max(zx, zy)
+	pc.zoom = Vector2(z, z)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if Input.is_action_just_pressed("toggle_ui"):
-		var item := $CanvasLayer/UI
+	var item := $CanvasLayer/UI
+	if ! playMode && Input.is_action_just_pressed("toggle_ui"):
 		item.visible = ! item.visible
 	if Input.is_action_just_pressed("ui_cancel"):
-		get_tree().quit()
+		if playMode:
+			item.visible = true
+			playMode = false
+			player.setActive(false)
+			mapCamera.current = true
+			return
+		else:
+			get_tree().quit()
 
 	var _working := working
 
 	if _working:
 		return
+	if playMode:
+		return
+
 	if event is InputEventMouseMotion:
 		generator.mousePointer = get_global_mouse_position()
 		update()
@@ -127,6 +148,18 @@ func _process(_delta):
 func _draw():
 	if debugDrawing.pressed:
 		generator.drawDebugCanvas(self)
+
+
+func _physics_process(delta):
+	if playMode:
+		var input_vector = Vector2.ZERO
+		input_vector.x = (
+			Input.get_action_strength("ui_right")
+			- Input.get_action_strength("ui_left")
+		)
+		input_vector.y = Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
+		input_vector = input_vector.normalized()
+		player.playerInput(input_vector, delta)
 
 
 func updateUI() -> void:
@@ -304,3 +337,12 @@ func _on_debugDrawing_pressed():
 
 func _on_ToolButton_pressed():
 	generator.requestStop = true
+
+
+func _on_playButton_pressed():
+	$CanvasLayer/UI.visible = false
+	print(generator.entrance)
+	player.position = generator.entrance * tileSize
+	player.setActive(true)
+	mapCamera.current = false
+	playMode = true

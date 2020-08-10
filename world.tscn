@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=2]
+[gd_scene load_steps=16 format=2]
 
 [ext_resource path="res://simple_tiles.png" type="Texture" id=1]
 [ext_resource path="res://world.gd" type="Script" id=2]
@@ -7,6 +7,7 @@
 [ext_resource path="res://gfx/cave.png" type="Texture" id=5]
 [ext_resource path="res://text_field.tscn" type="PackedScene" id=6]
 [ext_resource path="res://cave_generator.gd" type="Script" id=7]
+[ext_resource path="res://Player.tscn" type="PackedScene" id=8]
 
 [sub_resource type="NavigationPolygon" id=1]
 vertices = PoolVector2Array( 0, 0, 32, 0, 32, 32, 0, 32 )
@@ -181,7 +182,7 @@ __meta__ = {
 margin_left = 7.0
 margin_top = 7.0
 margin_right = 207.0
-margin_bottom = 593.0
+margin_bottom = 599.0
 rect_min_size = Vector2( 200, 0 )
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -260,7 +261,7 @@ label_text = "Max Room Size"
 [node name="buttonBox" type="VBoxContainer" parent="CanvasLayer/UI/vbox"]
 margin_top = 352.0
 margin_right = 200.0
-margin_bottom = 586.0
+margin_bottom = 592.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -306,13 +307,18 @@ margin_bottom = 192.0
 size_flags_horizontal = 5
 text = "Auto Smooth"
 
-[node name="regen" type="ToolButton" parent="CanvasLayer/UI/vbox/buttonBox"]
+[node name="regen" type="Button" parent="CanvasLayer/UI/vbox/buttonBox"]
 margin_top = 196.0
 margin_right = 200.0
-margin_bottom = 234.0
+margin_bottom = 216.0
 size_flags_vertical = 3
 text = "Regenerate"
-flat = false
+
+[node name="playButton" type="Button" parent="CanvasLayer/UI/vbox/buttonBox"]
+margin_top = 220.0
+margin_right = 200.0
+margin_bottom = 240.0
+text = "Play Preview"
 
 [node name="Working" type="PanelContainer" parent="CanvasLayer"]
 anchor_left = 0.5
@@ -364,6 +370,9 @@ size_flags_vertical = 3
 script = ExtResource( 7 )
 level_seed = "2020"
 fillRatio = 50
+
+[node name="Player" parent="." instance=ExtResource( 8 )]
+visible = false
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/seed" to="." method="_on_seed_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map W" to="." method="_on_Map_W_value_changed"]
 [connection signal="value_changed" from="CanvasLayer/UI/vbox/Map H" to="." method="_on_Map_H_value_changed"]
@@ -383,6 +392,7 @@ fillRatio = 50
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/doConnections" to="." method="_on_doConnections_toggled"]
 [connection signal="toggled" from="CanvasLayer/UI/vbox/buttonBox/autosmooth" to="." method="_on_autosmooth_toggled"]
 [connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/regen" to="." method="_on_regen_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/vbox/buttonBox/playButton" to="." method="_on_playButton_pressed"]
 [connection signal="pressed" from="CanvasLayer/Working/VBoxContainer/HBoxContainer/ToolButton" to="." method="_on_ToolButton_pressed"]
 [connection signal="completed" from="generator" to="." method="_on_generator_completed"]
 [connection signal="progress" from="generator" to="." method="_on_generator_progress"]
