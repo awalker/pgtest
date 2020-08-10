@@ -284,8 +284,9 @@ func _on_seed_value_changed(value):
 func _on_generator_completed():
 	setUIDisabled(false)
 	working = false
-	generator.mapToTileMap(tileMap, true, 0)
+	generator.mapToTileMap(tileMap, false, 0)
 	tileMap.update_bitmask_region()
+	tileMap.update_dirty_quadrants()
 	update()
 	updateUI()
 	mapCameraUpdated()
