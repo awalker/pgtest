@@ -40,6 +40,7 @@ var exitThread := false
 var requestStop := false
 var noise := OpenSimplexNoise.new()
 var entrance := Vector2.ZERO
+var items_seed := 0
 
 var map := []
 var itemMap := []
@@ -102,7 +103,6 @@ class Room:
 		return rooms
 
 	func connectRoom(room: Room, a: Vector2, b: Vector2) -> void:
-		print("Connect %s to %s" % [self, room])
 		connected.append([room, a, b, false])
 		room.connected.append([self, a, b, false])
 		if isConnectedToMain && ! room.isConnectedToMain:
@@ -197,8 +197,8 @@ class Room:
 
 	func findClosest(rooms: Array, map: Array):
 		"""Currently, this find a close-ish room.
-    The first round of judges distance by center. Probably should just
-    compare all the points everywhere"""
+	The first round of judges distance by center. Probably should just
+	compare all the points everywhere"""
 		findEdges(map)
 		var closestSq := 999999999999.0
 		var closestRoom: Room
@@ -230,12 +230,6 @@ class Room:
 			return []
 
 	func drawConnections(color: Color, tileSize: int, node: Node2D) -> void:
-		var worldCenter = center * tileSize
-		node.draw_rect(
-			Rect2(worldCenter, Vector2(tileSize, tileSize)),
-			Color.blue if isMain else Color.red,
-			true
-		)
 		for c in connected:
 			node.draw_line(c[1] * tileSize, c[2] * tileSize, color, tileSize)
 		for edge in edges:
@@ -364,11 +358,9 @@ func mouseHighlight(p: Vector2):
 	exitMutex.lock()
 	working = true
 	exitMutex.unlock()
-	print("finding group")
 # warning-ignore:narrowing_conversion
 # warning-ignore:narrowing_conversion
 	highlightTiles = findTileGroup(p.x / tileSize, p.y / tileSize, Tiles.DIRT)
-	print(highlightTiles.size())
 	exitMutex.lock()
 	working = false
 	exitMutex.unlock()
@@ -391,11 +383,6 @@ func drawDebugCanvas(node: Node2D):
 			_highlights.draw(Color("#00FF00" if working else "#0000FF"), tileSize, node)
 		# mapMutex.unlock()
 
-	if rooms:
-		for r in rooms:
-			node.draw_circle(
-				Vector2(r.center.x * tileSize, r.center.y * tileSize), 32.0, Color.yellow
-			)
 	if _list:
 		for i in _list.size():
 			var r: Room = _list[i]
@@ -412,7 +399,7 @@ func drawDebugCanvas(node: Node2D):
 						Color.seashell if i == Items.ENTRANCE else Color.sienna
 					)
 				if map[x][y] == Tiles.DIRT:
-					var f := noise.get_noise_2d(x, y)
+					var f := noise.get_noise_2d(x * 100.0 / mapWidth, y * 100.0 / mapHeight)
 					var c := Color.white
 					if f >= 0.15 && f < 0.45:
 						c = Color.red
@@ -534,7 +521,7 @@ func generateItemPlaces() -> void:
 			if itemMap[x][y]:
 				items.append(itemMap[x][y])
 			else:
-				var f := noise.get_noise_2d(x, y)
+				var f := noise.get_noise_2d(x * 100.0 / mapWidth, y * 100.0 / mapHeight)
 				if f >= 0.15 && f < 0.45:
 					var r := rnd.randi_range(0, 100)
 				elif f >= 0.45:
@@ -549,7 +536,6 @@ func walls_sort_small(a: Room, b: Room) -> bool:
 func _cull() -> void:
 	var total = mapWidth * mapHeight * 2
 	var walls: Array = findGroups(Tiles.WALL, 0, total)
-	print("Found %d wall groups" % walls.size())
 	walls.sort_custom(self, "walls_sort_small")
 	var i := 0
 	mapMutex.lock()
@@ -558,7 +544,6 @@ func _cull() -> void:
 			mapMutex.unlock()
 			return
 		if walls[0].size() < minWallArea:
-			print(walls[0].size())
 			# make all the walls in this tile group into dirt
 			walls[0].setTile(map, Tiles.DIRT)
 			walls.remove(0)
@@ -566,7 +551,6 @@ func _cull() -> void:
 			break
 	mapMutex.unlock()
 	var dirts: Array = findGroups(Tiles.DIRT, mapWidth * mapHeight, total)
-	print("Found %d dirt groups" % dirts.size())
 	dirts.sort_custom(self, "walls_sort_small")
 	i = 0
 	mapMutex.lock()
@@ -575,7 +559,6 @@ func _cull() -> void:
 			mapMutex.unlock()
 			return
 		if dirts[0].size() < minRoomArea:
-			print(dirts[0].size())
 			# make all the walls in this tile group into dirt
 			dirts[0].setTile(map, Tiles.WALL)
 			dirts.remove(0)
@@ -583,7 +566,6 @@ func _cull() -> void:
 			break
 	listOfRooms = dirts
 	mapMutex.unlock()
-	call_deferred("mapToTileMap")
 	call_deferred("update")
 
 
@@ -618,8 +600,6 @@ var runlimit = 250
 
 func findTileGroup(x: int, y: int, type: int):
 	var data := [Room.new(), [Vector2(x, y)]]
-	var start := OS.get_ticks_msec()
-	var elapsed := 0.0
 	var i := 0
 	while data[1].size():
 		data = findRestOfGroup(data, type)
@@ -627,11 +607,8 @@ func findTileGroup(x: int, y: int, type: int):
 	if i > runlimit:
 		i = 0
 		# Resume execution the next frame.
-		elapsed += OS.get_ticks_msec() - start
 		highlightTiles = data[0]
 		update()
-		start = OS.get_ticks_msec()
-	print("%f sec at run limit %d" % [elapsed / 1000.0, runlimit])
 	highlightTiles = data[0].normalize()
 	return data[0]
 
@@ -707,13 +684,11 @@ func _connectRooms(forceConnect := false):
 	mapMutex.lock()
 	if listOfRooms.size() == 0:
 		cull()
-	print("_connectRooms room count %d" % listOfRooms.size())
 	_sendProgress(0, listOfRooms.size())
 	var mainRoom: Room = listOfRooms[listOfRooms.size() - 1]
 	mainRoom.isMain = true
 	mainRoom.isConnectedToMain = true
 
-	print("found %d rooms" % listOfRooms.size())
 	mapMutex.unlock()
 	# if listOfRooms.size() > 1:
 	# 	for roomIndex in range(0, listOfRooms.size() - 1):
@@ -736,12 +711,6 @@ func _connectRooms(forceConnect := false):
 	else:
 		groupMain = listOfRooms
 		groupDisconnected = listOfRooms
-	print(
-		(
-			"number of groups disconnected %d group main %d force %s"
-			% [groupDisconnected.size(), groupMain.size(), forceConnect]
-		)
-	)
 	_sendProgress(groupMain.size(), listOfRooms.size())
 	if groupDisconnected.size() == 0:
 		# only one group, everything is connected
@@ -754,7 +723,6 @@ func _connectRooms(forceConnect := false):
 		var d = 99999999999999
 		var cdetails := []
 		for r1 in groupMain:
-			print("r1 %s" % r1)
 			if cdetails.size() and not forceConnect:
 				cdetails = []
 			# if not forceConnect and r1.connected.size() > 0:
@@ -852,22 +820,16 @@ func _createRooms():
 
 
 func _getRandomRoomTile(room: Room) -> Vector2:
-	print("_getRandomRoomTile")
 	var out: Vector2
 	while not out:
 		var xs := room.regions.keys()
 		var x := rnd.randi_range(xs[1], xs[-1])
 		var regions: Array = room.regions[x]
 		var ys: Array = regions[rnd.randi_range(0, regions.size())]
-		print("ys %s %s %s" % [ys, typeof(ys), TYPE_ARRAY])
 		var d = ys[1] - ys[0]
-		print("d %s" % d)
-		# print("x %s d %s" % [x, d])
 		if d >= 3:
-			print("d >= 3")
 			var y := rnd.randi_range(ys[0], ys[1])
 			out = Vector2(x, y)
-	print("get random tile %s" % out)
 	return out
 
 
@@ -878,6 +840,8 @@ func _placeEntranceAndExit():
 	# TODO: May want to make sure higher tier items/enemies are not placed close to the entrance
 	var entranceRoom: Room
 	var exitRoom: Room
+	if listOfRooms.size() == 0:
+		return
 	if listOfRooms.size() == 1:
 		entranceRoom = listOfRooms[0]
 		exitRoom = listOfRooms[0]
@@ -887,8 +851,8 @@ func _placeEntranceAndExit():
 			var t: Room = listOfRooms[rnd.randi_range(0, listOfRooms.size())]
 			if t != entranceRoom:
 				exitRoom = t
-	print(entranceRoom)
-	print(exitRoom)
+	print("entranceRoom %s" % entranceRoom)
+	print("exitRoom %s" % exitRoom)
 	var v: Vector2 = _getRandomRoomTile(entranceRoom)
 	entrance = v
 	itemMap[v.x][v.y] = Items.ENTRANCE
@@ -898,6 +862,7 @@ func _placeEntranceAndExit():
 
 func _regen():
 	createMapAtTimeZero()
+	print(hash(level_seed))
 	if not requestStop and useRooms:
 		makeRooms()
 	if not requestStop:
@@ -910,6 +875,8 @@ func _regen():
 			_carveTunnels()
 			doAutoSmoothing()
 		if not requestStop:
+			items_seed = rnd.seed
+			print(rnd.seed)
 			_placeEntranceAndExit()
 		if not requestStop:
 			generateItemPlaces()
